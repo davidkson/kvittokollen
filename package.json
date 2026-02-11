@@ -1,0 +1,30 @@
+{
+  "name": "willys-receipt-fetcher",
+  "version": "1.0.0",
+  "description": "Automatisk hämtning av digitala kvitton från Willys.se",
+  "main": "fetch-receipts.js",
+  "type": "module",
+  "scripts": {
+    "start": "node menu.cjs",
+    "willys": "node fetch-receipts.js",
+    "ica": "node fetch-ica-kivra.js",
+    "install-browser": "npx playwright install chromium",
+    "analyze-willys": "node analyze-receipts.cjs",
+    "analyze-ica": "node analyze-ica.cjs",
+    "analyze-combined": "node analyze-combined.cjs",
+    "update-willys": "node update-receipts.cjs",
+    "update-ica": "node update-ica.cjs",
+    "remove-duplicates": "node remove-duplicates.cjs"
+  },
+  "keywords": [
+    "willys",
+    "receipts",
+    "kvitton"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pdf-parse": "^2.4.5",
+    "playwright": "^1.48.0"
+  }
+}
