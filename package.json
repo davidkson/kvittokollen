@@ -9,12 +9,12 @@
     "willys": "node fetch-receipts.js",
     "ica": "node fetch-ica-kivra.js",
     "install-browser": "npx playwright install chromium",
-    "analyze-willys": "node analyze-receipts.cjs",
-    "analyze-ica": "node analyze-ica.cjs",
-    "analyze-combined": "node analyze-combined.cjs",
-    "update-willys": "node update-receipts.cjs",
-    "update-ica": "node update-ica.cjs",
-    "remove-duplicates": "node remove-duplicates.cjs"
+    "analyze-willys": "node reports/analyze-receipts.cjs",
+    "analyze-ica": "node reports/analyze-ica.cjs",
+    "analyze-combined": "node reports/analyze-combined.cjs",
+    "update-willys": "node scripts/update-receipts.cjs",
+    "update-ica": "node scripts/update-ica.cjs",
+    "remove-duplicates": "node scripts/remove-duplicates.cjs"
   },
   "keywords": [
     "willys",

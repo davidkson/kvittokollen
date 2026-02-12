@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const path = require('path');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const outputDir = path.join(__dirname, '../output');
+const willysData = JSON.parse(fs.readFileSync(path.join(outputDir, 'willys-analysis.json'), 'utf8'));
+const icaData = JSON.parse(fs.readFileSync(path.join(outputDir, 'ica-analysis.json'), 'utf8'));
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🔍 SÖKER EFTER DUBBLETTER                        ║');

@@ -695,22 +695,29 @@ async function fetchWillysReceipts() {
     await usernameField.fill(username);
     console.log('✅ Fyllde i användarnamn');
 
-    const passwordField = await page.waitForSelector('input[type="password"]', { timeout: 2000 });
-    await passwordField.fill(password);
-    console.log('✅ Fyllde i lösenord');
+    console.log('\n' + '='.repeat(60));
+    console.log('⏸️  MANUELL INLOGGNING');
+    console.log('='.repeat(60));
+    console.log('👉 Fyll i ditt lösenord i webbläsaren');
+    console.log('👉 Klicka på "Logga in"-knappen');
+    console.log('👉 Vänta tills du ser "Mina köp"-sidan');
+    console.log('='.repeat(60));
+    console.log('\nTryck ENTER när du är inloggad...');
 
-    const loginButton = await page.waitForSelector('button[type="submit"]', { timeout: 2000 });
-    await loginButton.click();
-    console.log('🔐 Loggar in...');
+    // Vänta på att användaren trycker Enter
+    await new Promise((resolve) => {
+      process.stdin.once('data', () => {
+        resolve();
+      });
+    });
 
-    await page.waitForTimeout(3000);
-    console.log('✅ Inloggning lyckades!');
+    console.log('✅ Fortsätter efter manuell inloggning...');
 
-    // Gå till kvittosidan
-    console.log(`\n📄 Navigerar till kvittosidan: ${CONFIG.receiptsUrl}`);
+    // Gå till kvittosidan (om vi inte redan är där)
+    console.log(`\n📄 Säkerställer att vi är på kvittosidan: ${CONFIG.receiptsUrl}`);
     await page.goto(CONFIG.receiptsUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
-    console.log('✅ Laddade kvittosidan');
+    console.log('✅ På kvittosidan');
 
     // Kolla om vi ska använda senaste hämtningsdatum
     const lastFetchDate = getLastFetchDate();

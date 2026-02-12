@@ -58,9 +58,15 @@ const options = [
     description: 'Hämtar + uppdaterar Willys & ICA + kombinerad analys'
   },
   {
+    key: '9',
+    label: '📊 Visa rapporter',
+    command: 'node run-report.cjs',
+    description: 'Interaktiv meny med 22 analysrapporter'
+  },
+  {
     key: 'd',
     label: '🧹 Ta bort dubbletter',
-    command: 'node remove-duplicates.cjs',
+    command: 'node scripts/remove-duplicates.cjs',
     description: 'Rensar bort dubbla kvitton från analysfilerna'
   },
   {
@@ -116,13 +122,19 @@ function showHelp() {
   console.log('  npm run update-willys       # Uppdatera Willys (bara nya)');
   console.log('  npm run update-ica          # Uppdatera ICA (bara nya)\n');
 
-  console.log('🔍 SPECIALANALYSER:\n');
-  console.log('  node compare-cat-food.cjs   # Jämför kattmat Willys vs ICA');
-  console.log('  node compare-monthly.cjs    # Jämför per månad Willys vs ICA\n');
+  console.log('📊 RAPPORTER:\n');
+  console.log('  node run-report.cjs                 # Interaktiv meny med 22 rapporter\n');
+
+  console.log('🔍 SPECIALANALYSER (direkta):\n');
+  console.log('  node reports/compare-cat-food.cjs   # Jämför kattmat Willys vs ICA');
+  console.log('  node reports/compare-monthly.cjs    # Jämför per månad Willys vs ICA');
+  console.log('  node reports/analyze-catfood.cjs    # Kattmatanalys');
+  console.log('  node reports/analyze-milk.cjs       # Mjölkanalys');
+  console.log('  node reports/analyze-coke-zero.cjs  # Coca Cola Zero analys\n');
 
   console.log('🧹 DATAUNDERHÅLL:\n');
   console.log('  npm run remove-duplicates   # Ta bort dubblettkvitton');
-  console.log('  node check-duplicates.cjs   # Kontrollera om dubbletter finns\n');
+  console.log('  node scripts/check-duplicates.cjs   # Kontrollera om dubbletter finns\n');
 
   console.log('📁 GENERERADE FILER:\n');
   console.log('  output/willys-analysis.json');
@@ -159,7 +171,7 @@ async function executeCommand(command) {
       'npm run ica',
       'npm run update-willys',
       'npm run update-ica',
-      'node remove-duplicates.cjs',
+      'node scripts/remove-duplicates.cjs',
       'npm run analyze-combined'
     ];
 
@@ -207,7 +219,7 @@ async function promptUser() {
   });
 
   return new Promise((resolve) => {
-    rl.question('Välj (1-8, d, i, h, q): ', (answer) => {
+    rl.question('Välj (1-9, d, i, h, q): ', (answer) => {
       rl.close();
       resolve(answer.trim().toLowerCase());
     });

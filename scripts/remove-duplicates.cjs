@@ -56,17 +56,22 @@ function removeDuplicates(data, chain, chainName) {
   };
 }
 
-// Läs in data
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+// Läs in data (använd absolut sökväg baserat på script-position)
+const path = require('path');
+const outputDir = path.join(__dirname, '../output');
+const willysPath = path.join(outputDir, 'willys-analysis.json');
+const icaPath = path.join(outputDir, 'ica-analysis.json');
+
+const willysData = JSON.parse(fs.readFileSync(willysPath, 'utf8'));
+const icaData = JSON.parse(fs.readFileSync(icaPath, 'utf8'));
 
 // Ta bort dubbletter
 const cleanWillys = removeDuplicates(willysData, 'willys', 'Willys');
 const cleanIca = removeDuplicates(icaData, 'ica', 'ICA');
 
 // Spara rensade filer
-fs.writeFileSync('../output/willys-analysis.json', JSON.stringify(cleanWillys, null, 2), 'utf8');
-fs.writeFileSync('../output/ica-analysis.json', JSON.stringify(cleanIca, null, 2), 'utf8');
+fs.writeFileSync(willysPath, JSON.stringify(cleanWillys, null, 2), 'utf8');
+fs.writeFileSync(icaPath, JSON.stringify(cleanIca, null, 2), 'utf8');
 
 console.log('═══════════════════════════════════════════════════════════════');
 console.log('💾 SPARADE RENSADE FILER:\n');

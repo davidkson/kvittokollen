@@ -11,15 +11,15 @@
  */
 
 const path = require('path');
-const { extractAllReceipts } = require('./lib/pdf-extractor.cjs');
-const { parseAllReceipts } = require('./lib/receipt-parser.cjs');
-const { categorizeAllItems, getUncategorizedItems } = require('./lib/categorizer.cjs');
-const { analyzeReceipts } = require('./lib/analyzer.cjs');
-const { generateAllReports } = require('./lib/report-generator.cjs');
+const { extractAllReceipts } = require('../lib/pdf-extractor.cjs');
+const { parseAllReceipts } = require('../lib/receipt-parser.cjs');
+const { categorizeAllItems, getUncategorizedItems } = require('../lib/categorizer.cjs');
+const { analyzeReceipts } = require('../lib/analyzer.cjs');
+const { generateAllReports } = require('../lib/report-generator.cjs');
 
 // Configuration
-const RECEIPTS_DIR = path.join(__dirname, 'receipts');
-const OUTPUT_DIR = path.join(__dirname, 'output');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const OUTPUT_DIR = path.join(__dirname, '../output');
 
 /**
  * Main analysis pipeline

@@ -12,8 +12,8 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 
 // Configuration
-const RECEIPTS_DIR = path.join(__dirname, 'receipts');
-const JSON_OUTPUT = path.join(__dirname, 'output', 'ica-analysis.json');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const JSON_OUTPUT = path.join(__dirname, '../output', 'ica-analysis.json');
 
 /**
  * Extract text from PDF
@@ -243,6 +243,46 @@ function recalculateStats(allReceipts) {
 }
 
 /**
+ * Create a signature for duplicate detection
+ */
+function createReceiptSignature(receipt) {
+  const total = receipt.metadata.grandTotal || 0;
+  const itemCount = receipt.items?.length || 0;
+  const date = receipt.metadata?.date || '';
+
+  // Create sorted list of items for content comparison
+  const itemsSignature = (receipt.items || [])
+    .map(item => `${item.name}:${item.quantity}:${item.totalPrice}`)
+    .sort()
+    .join('|');
+
+  return `${date}|${total.toFixed(2)}|${itemCount}|${itemsSignature}`;
+}
+
+/**
+ * Remove duplicate receipts
+ */
+function removeDuplicates(receipts) {
+  const seen = new Set();
+  const uniqueReceipts = [];
+  let duplicateCount = 0;
+
+  for (const receipt of receipts) {
+    const signature = createReceiptSignature(receipt);
+
+    if (!seen.has(signature)) {
+      seen.add(signature);
+      uniqueReceipts.push(receipt);
+    } else {
+      duplicateCount++;
+      console.log(`  ✂️  Dublett borttagen: ${receipt.filename} (${receipt.metadata?.date})`);
+    }
+  }
+
+  return { uniqueReceipts, duplicateCount };
+}
+
+/**
  * Recalculate category and product analysis
  */
 function recalculateAnalysis(allReceipts) {
@@ -348,28 +388,37 @@ async function main() {
     const allReceipts = [...existingData.receipts, ...newReceipts];
     console.log(`  ✓ Totalt nu: ${allReceipts.length} kvitton\n`);
 
-    // Step 6: Recalculate statistics
-    console.log('Steg 6: Beräknar om statistik...');
-    const stats = recalculateStats(allReceipts);
+    // Step 6: Remove duplicates
+    console.log('Steg 6: Kontrollerar dubbletter...');
+    const { uniqueReceipts, duplicateCount } = removeDuplicates(allReceipts);
+    if (duplicateCount > 0) {
+      console.log(`  ✓ Tog bort ${duplicateCount} dubbletter\n`);
+    } else {
+      console.log(`  ✓ Inga dubbletter hittades\n`);
+    }
+
+    // Step 7: Recalculate statistics
+    console.log('Steg 7: Beräknar om statistik...');
+    const stats = recalculateStats(uniqueReceipts);
     console.log(`  ✓ Total kostnad: ${stats.totalSpending.toFixed(2)} SEK`);
     console.log(`  ✓ Totalt artiklar: ${stats.totalItems}`);
     console.log(`  ✓ Snitt per kvitto: ${stats.averageBasket.toFixed(2)} SEK\n`);
 
-    // Step 7: Recalculate analysis
-    console.log('Steg 7: Beräknar om kategorianalys...');
-    const analysis = recalculateAnalysis(allReceipts);
+    // Step 8: Recalculate analysis
+    console.log('Steg 8: Beräknar om kategorianalys...');
+    const analysis = recalculateAnalysis(uniqueReceipts);
     console.log(`  ✓ Kategorier: ${Object.keys(analysis.byCategory).length}`);
     console.log(`  ✓ Top produkter: ${analysis.topProducts.length}\n`);
 
-    // Step 8: Save updated JSON
-    console.log('Steg 8: Sparar uppdaterad JSON...');
+    // Step 9: Save updated JSON
+    console.log('Steg 9: Sparar uppdaterad JSON...');
     const updatedData = {
       metadata: {
         generatedAt: existingData.metadata.generatedAt || new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
         ...stats
       },
-      receipts: allReceipts,
+      receipts: uniqueReceipts,
       analysis: analysis
     };
 
@@ -381,7 +430,8 @@ async function main() {
     console.log('✅ UPPDATERING KLAR!\n');
     console.log('📊 SAMMANFATTNING:');
     console.log(`  • Nya kvitton: ${newReceipts.length}`);
-    console.log(`  • Totalt kvitton: ${allReceipts.length}`);
+    console.log(`  • Dubbletter borttagna: ${duplicateCount}`);
+    console.log(`  • Totalt kvitton: ${uniqueReceipts.length}`);
     console.log(`  • Total kostnad: ${stats.totalSpending.toFixed(2)} SEK`);
     console.log(`  • Totalt artiklar: ${stats.totalItems}\n`);
 

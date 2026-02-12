@@ -10,9 +10,9 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 
 // Configuration
-const ICA_RECEIPTS_META = './receipts/ica-receipts.json';
-const RECEIPTS_DIR = './receipts';
-const OUTPUT_FILE = '../output/ica-analysis.json';
+const ICA_RECEIPTS_META = path.join(__dirname, '../receipts/ica-receipts.json');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const OUTPUT_FILE = path.join(__dirname, '../output/ica-analysis.json');
 
 /**
  * Extract text from PDF

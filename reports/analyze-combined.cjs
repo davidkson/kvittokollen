@@ -11,11 +11,11 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 
 // Configuration
-const WILLYS_ANALYSIS = '../output/willys-analysis.json';
-const ICA_ANALYSIS = '../output/ica-analysis.json';
-const COMBINED_ANALYSIS = '../output/combined-analysis.json';
-const ICA_RECEIPTS = './receipts/ica-receipts.json';
-const RECEIPTS_DIR = './receipts';
+const WILLYS_ANALYSIS = path.join(__dirname, '../output/willys-analysis.json');
+const ICA_ANALYSIS = path.join(__dirname, '../output/ica-analysis.json');
+const COMBINED_ANALYSIS = path.join(__dirname, '../output/combined-analysis.json');
+const ICA_RECEIPTS = path.join(__dirname, '../receipts/ica-receipts.json');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts');
 
 // Swedish month names
 const monthNames = {
