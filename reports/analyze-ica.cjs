@@ -10,8 +10,8 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 
 // Configuration
-const ICA_RECEIPTS_META = path.join(__dirname, '../receipts/ica-receipts.json');
-const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const ICA_RECEIPTS_META = path.join(__dirname, '../receipts/ica/ica-receipts.json');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts/ica');
 const OUTPUT_FILE = path.join(__dirname, '../output/ica-analysis.json');
 
 /**
@@ -77,39 +77,63 @@ function parseItems(text) {
 
     if (!inItemSection || !line) continue;
 
+    // Check if this is a discounted item (starts with *)
+    const isDiscounted = line.startsWith('*');
+
     // Match item line: "Product name NNNNNN price qty unit total"
     // Example: "AXA F-müsli Guld 5701029160823 33,95 1,00 st 33,95"
-    const itemMatch = line.match(/^(.+?)\s+(\d{10,})\s+([\d,\.]+)\s+([\d,\.]+)\s+(st|kg|l|m|g|ml|cl|fp|hg|dl|förp)?\s*([\d,\.\-]+)$/);
+    // Or discounted: "*Björnpar med hjär 2087242 99,00 1,00 st 139,00"
+    const itemMatch = line.match(/^(\*)?(.+?)\s+(\d{7,})\s+([\d,\.]+)\s+([\d,\.]+)\s+(st|kg|l|m|g|ml|cl|fp|hg|dl|förp)?\s*([\d,\.\-]+)$/);
 
     if (itemMatch) {
-      const name = itemMatch[1].trim();
-      const unitPrice = parseFloat(itemMatch[3].replace(',', '.'));
-      const quantity = parseFloat(itemMatch[4].replace(',', '.'));
-      const totalPrice = parseFloat(itemMatch[6].replace(',', '.'));
+      const name = itemMatch[2].trim();
+      const unitPrice = parseFloat(itemMatch[4].replace(',', '.'));
+      const quantity = parseFloat(itemMatch[5].replace(',', '.'));
+      const originalPrice = parseFloat(itemMatch[7].replace(',', '.'));
+
+      let finalPrice = originalPrice;
+      let discount = 0;
+
+      // If discounted, check next line for discount amount
+      if (isDiscounted && i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const discountMatch = nextLine.match(/^(.+?)\s+([\-\d,\.]+)$/);
+
+        if (discountMatch) {
+          discount = parseFloat(discountMatch[2].replace(',', '.'));
+          finalPrice = originalPrice + discount; // discount is negative
+          i++; // Skip next line since we've processed it
+        }
+      }
 
       items.push({
         name: name,
         quantity: quantity,
-        unitPrice: unitPrice,
-        totalPrice: totalPrice,
+        unitPrice: finalPrice / quantity,
+        totalPrice: finalPrice,
+        originalPrice: isDiscounted ? originalPrice : undefined,
+        discount: isDiscounted ? Math.abs(discount) : undefined,
         category: categorizeItem(name)
       });
     }
-    // Handle discount lines (e.g., "Chokladkaka 3f79kr -19,85")
-    else if (line.includes('-') && line.match(/([\d,\.]+)$/)) {
+    // Handle standalone discount lines (e.g., "Chokladkaka 3f79kr -19,85")
+    else if (line.includes('-') && line.match(/([\d,\.]+)$/) && !line.match(/\d{7,}/)) {
       const discountMatch = line.match(/^(.+?)\s+([\-\d,\.]+)$/);
       if (discountMatch) {
         const name = discountMatch[1].trim();
         const totalPrice = parseFloat(discountMatch[2].replace(',', '.'));
 
-        items.push({
-          name: name,
-          quantity: 1,
-          unitPrice: totalPrice,
-          totalPrice: totalPrice,
-          isDiscount: totalPrice < 0,
-          category: 'Discounts & Offers'
-        });
+        // Only add if it's truly a standalone discount (not part of a product)
+        if (totalPrice < 0 && !line.match(/\d{7,}/)) {
+          items.push({
+            name: name,
+            quantity: 1,
+            unitPrice: totalPrice,
+            totalPrice: totalPrice,
+            isDiscount: true,
+            category: 'Discounts & Offers'
+          });
+        }
       }
     }
   }

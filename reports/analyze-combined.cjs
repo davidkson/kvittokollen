@@ -14,8 +14,8 @@ const { PDFParse } = require('pdf-parse');
 const WILLYS_ANALYSIS = path.join(__dirname, '../output/willys-analysis.json');
 const ICA_ANALYSIS = path.join(__dirname, '../output/ica-analysis.json');
 const COMBINED_ANALYSIS = path.join(__dirname, '../output/combined-analysis.json');
-const ICA_RECEIPTS = path.join(__dirname, '../receipts/ica-receipts.json');
-const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const ICA_RECEIPTS = path.join(__dirname, '../receipts/ica/ica-receipts.json');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts/ica');
 
 // Swedish month names
 const monthNames = {
@@ -85,40 +85,32 @@ async function parseICAReceipt(pdfPath) {
 }
 
 /**
- * Load and parse ICA receipts
+ * Load ICA receipts from analysis file
  */
-async function loadICAReceipts() {
-  console.log('📄 Läser ICA-kvitton från PDFs...\n');
+function loadICAReceipts() {
+  console.log('📄 Läser ICA-data från analys...\n');
 
-  const icaMetadata = JSON.parse(fs.readFileSync(ICA_RECEIPTS, 'utf8'));
-  const receipts = [];
-
-  for (const receipt of icaMetadata.receipts) {
-    const pdfPath = path.join(RECEIPTS_DIR, receipt.fileName);
-
-    if (!fs.existsSync(pdfPath)) {
-      console.log(`   ⚠️  Fil saknas: ${receipt.fileName}`);
-      continue;
-    }
-
-    process.stdout.write(`   📥 ${receipt.fileName}...`);
-    const parsed = await parseICAReceipt(pdfPath);
-
-    if (parsed && parsed.total > 0) {
-      receipts.push({
-        fileName: receipt.fileName,
-        date: parsed.date,
-        total: parsed.total,
-        store: parsed.store,
-        chain: 'ICA'
-      });
-      console.log(` ✅ ${parsed.total.toFixed(2)} SEK (${parsed.date || 'okänt datum'})`);
-    } else {
-      console.log(` ⚠️  Kunde inte läsa belopp`);
-    }
+  if (!fs.existsSync(ICA_ANALYSIS)) {
+    console.log('   ⚠️  Ingen ICA-analys hittades. Kör "npm run update-ica" först.\n');
+    return [];
   }
 
-  console.log(`\n✅ Läste ${receipts.length} ICA-kvitton\n`);
+  const data = JSON.parse(fs.readFileSync(ICA_ANALYSIS, 'utf8'));
+  const receipts = [];
+
+  for (const receipt of data.receipts) {
+    const total = receipt.metadata?.grandTotal || 0;
+
+    receipts.push({
+      fileName: receipt.filename,
+      date: receipt.metadata?.date,
+      total: total,
+      store: receipt.metadata?.store || 'ICA',
+      chain: 'ICA'
+    });
+  }
+
+  console.log(`✅ Läste ${receipts.length} ICA-kvitton\n`);
   return receipts;
 }
 
@@ -196,7 +188,7 @@ async function main() {
 
   // Load data
   const willysReceipts = loadWillysReceipts();
-  const icaReceipts = await loadICAReceipts();
+  const icaReceipts = loadICAReceipts();
   const allReceipts = [...willysReceipts, ...icaReceipts];
 
   if (allReceipts.length === 0) {
@@ -293,28 +285,6 @@ async function main() {
   console.log(`ICA    ${icaBar} ${(totalICA/grandTotal*100).toFixed(1)}%\n`);
 
   console.log('═══════════════════════════════════════════════════════════════\n');
-
-  // Save ICA analysis
-  const icaAnalysis = {
-    summary: {
-      totalReceipts: icaReceipts.length,
-      totalAmount: totalICA,
-      averageAmount: avgICA,
-      dateRange: {
-        earliest: icaReceipts.length > 0 ? icaReceipts.sort((a, b) => a.date?.localeCompare(b.date))[0]?.date : null,
-        latest: icaReceipts.length > 0 ? icaReceipts.sort((a, b) => b.date?.localeCompare(a.date))[0]?.date : null
-      }
-    },
-    receipts: icaReceipts,
-    monthly: Object.keys(monthly).reduce((acc, monthKey) => {
-      acc[monthKey] = monthly[monthKey].ica;
-      return acc;
-    }, {}),
-    generatedAt: new Date().toISOString()
-  };
-
-  fs.writeFileSync(ICA_ANALYSIS, JSON.stringify(icaAnalysis, null, 2), 'utf8');
-  console.log(`💾 ICA-analys sparad: ${ICA_ANALYSIS}\n`);
 
   // Save combined analysis
   const combinedAnalysis = {

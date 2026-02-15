@@ -18,7 +18,7 @@ const { analyzeReceipts } = require('../lib/analyzer.cjs');
 const { generateAllReports } = require('../lib/report-generator.cjs');
 
 // Configuration
-const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts/willys');
 const OUTPUT_DIR = path.join(__dirname, '../output');
 
 /**

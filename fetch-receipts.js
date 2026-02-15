@@ -6,9 +6,9 @@ import path from 'path';
 const CONFIG = {
   loginUrl: 'https://www.willys.se/anvandare/inloggning',
   receiptsUrl: 'https://www.willys.se/mina-kop',
-  outputDir: './receipts',
+  outputDir: './receipts/willys',
   outputFile: 'willys-receipts.json',
-  lastFetchFile: './receipts/.last-fetch-willys.json',
+  lastFetchFile: './receipts/willys/.last-fetch-willys.json',
   headless: false,
   timeout: 30000,
   monthsToFetch: 12 // Antal månader bakåt att hämta (används bara första gången)

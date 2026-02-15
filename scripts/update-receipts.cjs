@@ -14,7 +14,7 @@ const { parseReceipt } = require('../lib/receipt-parser.cjs');
 const { categorizeItem } = require('../lib/categorizer.cjs');
 
 // Configuration
-const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts/willys');
 const JSON_OUTPUT = path.join(__dirname, '../output', 'willys-analysis.json');
 
 /**

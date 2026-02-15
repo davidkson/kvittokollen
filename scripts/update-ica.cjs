@@ -12,7 +12,7 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 
 // Configuration
-const RECEIPTS_DIR = path.join(__dirname, '../receipts');
+const RECEIPTS_DIR = path.join(__dirname, '../receipts/ica');
 const JSON_OUTPUT = path.join(__dirname, '../output', 'ica-analysis.json');
 
 /**
@@ -92,38 +92,61 @@ function parseItems(text) {
 
     if (!inItemSection || !line) continue;
 
+    // Check if this is a discounted item (starts with *)
+    const isDiscounted = line.startsWith('*');
+
     // Match item line
-    const itemMatch = line.match(/^(.+?)\s+(\d{10,})\s+([\d,\.]+)\s+([\d,\.]+)\s+(st|kg|l|m|g|ml|cl|fp|hg|dl|förp)?\s*([\d,\.\-]+)$/);
+    const itemMatch = line.match(/^(\*)?(.+?)\s+(\d{7,})\s+([\d,\.]+)\s+([\d,\.]+)\s+(st|kg|l|m|g|ml|cl|fp|hg|dl|förp)?\s*([\d,\.\-]+)$/);
 
     if (itemMatch) {
-      const name = itemMatch[1].trim();
-      const unitPrice = parseFloat(itemMatch[3].replace(',', '.'));
-      const quantity = parseFloat(itemMatch[4].replace(',', '.'));
-      const totalPrice = parseFloat(itemMatch[6].replace(',', '.'));
+      const name = itemMatch[2].trim();
+      const unitPrice = parseFloat(itemMatch[4].replace(',', '.'));
+      const quantity = parseFloat(itemMatch[5].replace(',', '.'));
+      const originalPrice = parseFloat(itemMatch[7].replace(',', '.'));
+
+      let finalPrice = originalPrice;
+      let discount = 0;
+
+      // If discounted, check next line for discount amount
+      if (isDiscounted && i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const discountMatch = nextLine.match(/^(.+?)\s+([\-\d,\.]+)$/);
+
+        if (discountMatch) {
+          discount = parseFloat(discountMatch[2].replace(',', '.'));
+          finalPrice = originalPrice + discount; // discount is negative
+          i++; // Skip next line since we've processed it
+        }
+      }
 
       items.push({
         name: name,
         quantity: quantity,
-        unitPrice: unitPrice,
-        totalPrice: totalPrice,
+        unitPrice: finalPrice / quantity,
+        totalPrice: finalPrice,
+        originalPrice: isDiscounted ? originalPrice : undefined,
+        discount: isDiscounted ? Math.abs(discount) : undefined,
         category: categorizeItem(name)
       });
     }
-    // Handle discount lines
-    else if (line.includes('-') && line.match(/([\d,\.]+)$/)) {
+    // Handle standalone discount lines (pant, etc)
+    else if (line.includes('-') && line.match(/([\d,\.]+)$/) && !line.match(/\d{7,}/)) {
       const discountMatch = line.match(/^(.+?)\s+([\-\d,\.]+)$/);
       if (discountMatch) {
         const name = discountMatch[1].trim();
         const totalPrice = parseFloat(discountMatch[2].replace(',', '.'));
 
-        items.push({
-          name: name,
-          quantity: 1,
-          unitPrice: totalPrice,
-          totalPrice: totalPrice,
-          isDiscount: totalPrice < 0,
-          category: 'Discounts & Offers'
-        });
+        // Only add if it's truly a standalone discount (not part of a product)
+        if (totalPrice < 0 && !line.match(/\d{7,}/)) {
+          items.push({
+            name: name,
+            quantity: 1,
+            unitPrice: totalPrice,
+            totalPrice: totalPrice,
+            isDiscount: true,
+            category: 'Discounts & Offers'
+          });
+        }
       }
     }
   }
@@ -230,8 +253,8 @@ function recalculateStats(allReceipts) {
   let totalItems = 0;
 
   for (const receipt of allReceipts) {
-    totalSpending += receipt.metadata.grandTotal;
-    totalItems += receipt.itemCount;
+    totalSpending += parseFloat(receipt.metadata?.grandTotal) || 0;
+    totalItems += receipt.itemCount || 0;
   }
 
   return {
@@ -246,7 +269,7 @@ function recalculateStats(allReceipts) {
  * Create a signature for duplicate detection
  */
 function createReceiptSignature(receipt) {
-  const total = receipt.metadata.grandTotal || 0;
+  const total = parseFloat(receipt.metadata?.grandTotal) || 0;
   const itemCount = receipt.items?.length || 0;
   const date = receipt.metadata?.date || '';
 
@@ -290,6 +313,8 @@ function recalculateAnalysis(allReceipts) {
   const productCounts = {};
 
   for (const receipt of allReceipts) {
+    if (!receipt.items || !Array.isArray(receipt.items)) continue;
+
     for (const item of receipt.items) {
       // Category totals
       if (!categoryTotals[item.category]) {
@@ -414,7 +439,7 @@ async function main() {
     console.log('Steg 9: Sparar uppdaterad JSON...');
     const updatedData = {
       metadata: {
-        generatedAt: existingData.metadata.generatedAt || new Date().toISOString(),
+        generatedAt: existingData.metadata?.generatedAt || new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
         ...stats
       },

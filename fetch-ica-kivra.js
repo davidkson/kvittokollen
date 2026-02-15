@@ -6,9 +6,9 @@ import path from 'path';
 const CONFIG = {
   loginUrl: 'https://www.kivra.se',
   icaChainUrl: 'https://inbox.kivra.com/user/1369137751a3563ebccc425734bd7fcc2c50225a3a/chains/15765665678a499fdd66139b23016615a978111111',
-  outputDir: './receipts',
+  outputDir: './receipts/ica',
   outputFile: 'ica-receipts.json',
-  lastFetchFile: './receipts/.last-fetch-ica.json',
+  lastFetchFile: './receipts/ica/.last-fetch-ica.json',
   headless: false,
   timeout: 30000,
   monthsToFetch: 12 // Antal månader tillbaka att hämta (används bara första gången)
