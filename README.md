@@ -54,29 +54,36 @@ KIVRA_SSN=ÅÅMMDDXXXX
 
 ## Användning
 
-### Hämta nya kvitton
+### 🚀 Snabbkommandon (rekommenderat)
 
 ```bash
-npm run willys  # Hämta Willys-kvitton (automatisk)
+# Hämta nya kvitton OCH uppdatera analysdata i ett kommando
+npm run sync-willys  # Willys: fetch + update
+npm run sync-ica     # ICA: fetch + update (kräver BankID)
+npm run sync-all     # Både Willys och ICA
+```
+
+### Separata kommandon
+
+**Hämta kvitton:**
+```bash
+npm run willys  # Hämta Willys-kvitton
 npm run ica     # Hämta ICA-kvitton (kräver BankID)
+```
+
+**Uppdatera analysdata:**
+```bash
+npm run update-willys  # Bearbeta Willys PDF:er → output/willys-analysis.json
+npm run update-ica     # Bearbeta ICA PDF:er → output/ica-analysis.json
 ```
 
 ### Köra rapporter
 
-Från reports/ katalogen:
 ```bash
 cd reports
 node top-products.cjs
 node analyze-coke-zero.cjs
 node total-spending-monthly.cjs
-```
-
-### Uppdatera data
-
-```bash
-cd scripts
-node update-ica.cjs      # Hämta nya ICA-kvitton
-node update-receipts.cjs # Bearbeta Willys-kvitton
 ```
 
 ## Tillgängliga rapporter
@@ -89,4 +96,20 @@ node update-receipts.cjs # Bearbeta Willys-kvitton
 
 ## Data
 
-~195 unika kvitton från Willys och ICA (2025-02 till 2026-02)
+- **203 kvitton** från Willys (101) och ICA (102)
+- **Period**: 2025-02 till 2026-02 (13 månader)
+- **Total utgift**: 138,627 SEK
+- **Genomsnitt**: 10,664 SEK/månad
+
+### Dublikatkontroll
+
+Både Willys och ICA fetch-skripten har automatisk dublikatkontroll:
+- Laddar befintliga kvitton vid start
+- Skippar automatiskt redan nedladdade kvitton
+- Persistent mellan körningar
+
+**Hjälpskript:**
+```bash
+node scripts/check-willys-duplicates.cjs  # Kontrollera dubbletter
+node scripts/remove-willys-duplicates.cjs # Ta bort dubbletter
+```

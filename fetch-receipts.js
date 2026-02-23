@@ -1,6 +1,10 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// Ladda miljövariabler från .env
+dotenv.config();
 
 // Konfiguration
 const CONFIG = {
@@ -16,6 +20,7 @@ const CONFIG = {
 
 // Globala variabler för att hålla koll på nedladdade kvitton
 const downloadedUrls = new Set();
+const downloadedFiles = new Set(); // Nya: håll koll på PDF-filer som redan finns
 const allDownloadedReceipts = [];
 let globalReceiptCounter = 1;
 
@@ -48,6 +53,49 @@ function saveLastFetchDate(date) {
     console.log(`💾 Sparade senaste hämtningsdatum: ${data.lastFetchDate}`);
   } catch (error) {
     console.log('⚠️  Kunde inte spara senaste hämtningsdatum:', error.message);
+  }
+}
+
+// Funktion för att läsa befintliga kvitton och förhindra dubbletter
+function loadExistingReceipts() {
+  try {
+    // Läs willys-receipts.json om den finns
+    const receiptsJsonPath = path.join(CONFIG.outputDir, CONFIG.outputFile);
+    if (fs.existsSync(receiptsJsonPath)) {
+      const data = JSON.parse(fs.readFileSync(receiptsJsonPath, 'utf8'));
+      const existingReceipts = data.receipts || [];
+
+      existingReceipts.forEach(receipt => {
+        // Lägg till URL i Set för att förhindra omladdning
+        if (receipt.apiUrl) {
+          downloadedUrls.add(receipt.apiUrl);
+        }
+
+        // Lägg till filnamn i Set
+        if (receipt.fileName) {
+          downloadedFiles.add(receipt.fileName);
+        }
+      });
+
+      console.log(`📋 Laddade ${existingReceipts.length} befintliga kvitton från tidigare körningar`);
+      return existingReceipts.length;
+    }
+
+    // Kolla också i output-katalogen efter PDF-filer
+    if (fs.existsSync(CONFIG.outputDir)) {
+      const pdfFiles = fs.readdirSync(CONFIG.outputDir).filter(f => f.endsWith('.pdf'));
+      pdfFiles.forEach(file => downloadedFiles.add(file));
+
+      if (pdfFiles.length > 0) {
+        console.log(`📋 Hittade ${pdfFiles.length} befintliga PDF-filer i ${CONFIG.outputDir}`);
+      }
+      return pdfFiles.length;
+    }
+
+    return 0;
+  } catch (error) {
+    console.log('⚠️  Kunde inte läsa befintliga kvitton:', error.message);
+    return 0;
   }
 }
 
@@ -249,8 +297,24 @@ async function downloadReceipts(page, receiptUrls, batchNumber) {
     return 0;
   }
 
-  // Filtrera bort redan nedladdade kvitton
-  const newReceipts = receiptUrls.filter(r => !downloadedUrls.has(r.url));
+  // Filtrera bort redan nedladdade kvitton (kolla både URL och filnamn)
+  const newReceipts = receiptUrls.filter(r => {
+    if (downloadedUrls.has(r.url)) return false;
+
+    // Extrahera potentiellt filnamn från URL
+    const dateMatch = r.url.match(/date=(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      const potentialFileName = `kvitto_${dateMatch[1]}_`;
+      // Kolla om någon fil med detta datum redan finns
+      for (const existingFile of downloadedFiles) {
+        if (existingFile.startsWith(potentialFileName)) {
+          return false; // Skippa detta kvitto
+        }
+      }
+    }
+
+    return true;
+  });
 
   if (newReceipts.length === 0) {
     console.log('✅ Alla kvitton i denna batch är redan nedladdade');
@@ -294,8 +358,9 @@ async function downloadReceipts(page, receiptUrls, batchNumber) {
       fs.writeFileSync(pdfFilePath, buffer);
       console.log(`  ✅ Sparad: ${fileName}.pdf (${buffer.length} bytes)`);
 
-      // Markera som nedladdad
+      // Markera som nedladdad (både URL och filnamn)
       downloadedUrls.add(receipt.url);
+      downloadedFiles.add(`${fileName}.pdf`);
 
       // Lägg till i globala listan
       const parsedReceipt = {
@@ -592,6 +657,13 @@ async function fetchWillysReceipts() {
     process.exit(1);
   }
 
+  // Ladda befintliga kvitton för att förhindra dubbletter
+  console.log('🔍 Kollar efter befintliga kvitton...');
+  const existingCount = loadExistingReceipts();
+  if (existingCount > 0) {
+    console.log(`✅ Kommer att skippa ${existingCount} redan nedladdade kvitton\n`);
+  }
+
   // Kolla först om det finns nya kvitton att hämta
   const lastFetchDate = getLastFetchDate();
   if (lastFetchDate) {
@@ -610,16 +682,14 @@ async function fetchWillysReceipts() {
     console.log(`📅 Första hämtningen - hämtar senaste ${monthsToFetch} månaderna\n`);
   }
 
-  // Läs inloggningsuppgifter
+  // Läs inloggningsuppgifter (valfritt - kan logga in manuellt)
   const username = process.env.WILLYS_USERNAME;
   const password = process.env.WILLYS_PASSWORD;
+  const manualLogin = !username || !password;
 
-  if (!username || !password) {
-    console.error('❌ Fel: Saknar inloggningsuppgifter!');
-    console.log('\nSätt miljövariabler:');
-    console.log('  set WILLYS_USERNAME=ÅÅMMDDXXXX');
-    console.log('  set WILLYS_PASSWORD=ditt-lösenord');
-    process.exit(1);
+  if (manualLogin) {
+    console.log('ℹ️  Inga inloggningsuppgifter - använder manuell inloggning');
+    console.log('💡 Tips: Sätt WILLYS_USERNAME och WILLYS_PASSWORD i .env för auto-ifyllning\n');
   }
 
   const browser = await chromium.launch({
@@ -676,29 +746,36 @@ async function fetchWillysReceipts() {
       console.log('ℹ️  Ingen cookie-dialog');
     }
 
-    // Hitta och fyll i inloggningsformulär
-    console.log('🔍 Letar efter inloggningsformulär...');
+    // Hitta och fyll i inloggningsformulär (om credentials finns)
+    if (!manualLogin) {
+      console.log('🔍 Letar efter inloggningsformulär...');
 
-    const usernameSelectors = ['input[name="username"]', 'input[type="text"]', 'input[type="tel"]'];
-    let usernameField = null;
-    for (const selector of usernameSelectors) {
-      try {
-        usernameField = await page.waitForSelector(selector, { timeout: 2000 });
-        if (usernameField) break;
-      } catch (e) { continue; }
+      const usernameSelectors = ['input[name="username"]', 'input[type="text"]', 'input[type="tel"]'];
+      let usernameField = null;
+      for (const selector of usernameSelectors) {
+        try {
+          usernameField = await page.waitForSelector(selector, { timeout: 2000 });
+          if (usernameField) break;
+        } catch (e) { continue; }
+      }
+
+      if (!usernameField) {
+        throw new Error('Kunde inte hitta inloggningsformuläret');
+      }
+
+      await usernameField.fill(username);
+      console.log('✅ Fyllde i användarnamn');
     }
-
-    if (!usernameField) {
-      throw new Error('Kunde inte hitta inloggningsformuläret');
-    }
-
-    await usernameField.fill(username);
-    console.log('✅ Fyllde i användarnamn');
 
     console.log('\n' + '='.repeat(60));
     console.log('⏸️  MANUELL INLOGGNING');
     console.log('='.repeat(60));
-    console.log('👉 Fyll i ditt lösenord i webbläsaren');
+    if (manualLogin) {
+      console.log('👉 Fyll i ditt personnummer i webbläsaren');
+      console.log('👉 Fyll i ditt lösenord');
+    } else {
+      console.log('👉 Fyll i ditt lösenord i webbläsaren');
+    }
     console.log('👉 Klicka på "Logga in"-knappen');
     console.log('👉 Vänta tills du ser "Mina köp"-sidan');
     console.log('='.repeat(60));

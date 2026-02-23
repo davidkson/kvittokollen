@@ -1,6 +1,10 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// Ladda miljövariabler från .env
+dotenv.config();
 
 // Konfiguration
 const CONFIG = {

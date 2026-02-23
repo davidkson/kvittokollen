@@ -62,17 +62,32 @@ function calculateTotal(receipt) {
 
 ## Dataset
 
-- **Period**: 2025-02 till 2026-02
-- **Kvitton**: 195 unika (efter borttagning av 69 dubbletter)
-- **Willys**: 153 PDF-kvitton
-- **ICA**: 114 PDF-kvitton
+- **Period**: 2025-02 till 2026-02 (13 månader)
+- **Kvitton**: 203 totalt
+- **Willys**: 101 kvitton (74,368 SEK)
+- **ICA**: 102 kvitton (64,259 SEK)
+- **Total utgift**: 138,627 SEK
+- **Genomsnitt/månad**: 10,664 SEK
+- **Genomsnitt/kvitto**: 683 SEK
 
 ## Duplikatkontroll
 
+### Content Signature
 Dubbletter identifieras med content signature:
 ```javascript
 const signature = `${date}|${total}|${itemCount}|${itemsSignature}`;
 ```
+
+### Persistent kontroll i fetch-skript
+Både `fetch-receipts.js` (Willys) och `fetch-ica-kivra.js` (ICA) har nu persistent dublikatkontroll:
+- Laddar befintliga kvitton vid start från tidigare körningar
+- Kollar både API-URL och filnamn mot befintliga
+- Skippar automatiskt redan nedladdade kvitton
+- Förhindrar dubbletter mellan körningar
+
+### Hjälpskript
+- `scripts/check-willys-duplicates.cjs` - Kontrollera dubbletter
+- `scripts/remove-willys-duplicates.cjs` - Ta bort dubbletter automatiskt
 
 ## Miljövariabler
 
@@ -129,11 +144,12 @@ const excludePattern = /choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|
 
 ## Historik - viktiga fynd
 
-- **Maj 2025** såg dyr ut pga 69 duplikat-kvitton (nu fixat)
-- **November 2025** var lägst (6,828 SEK) - ingen hemleverans
-- **Hemleveranser** kostar typiskt 2,000-3,000 SEK per tillfälle
-- **Total spending**: ~117,609 SEK över 13 månader (avg 9,047 SEK/månad)
-- **Coca Cola Zero**: 3,424 SEK totalt (~188 liter)
+- **2026-02-23**: Hittade och tog bort 8 Willys-dubbletter (6,323 SEK)
+- **Maj 2025**: Såg dyr ut pga 69 duplikat-kvitton (nu fixat)
+- **November 2025**: Lägst månad (6,828 SEK) - ingen hemleverans
+- **Hemleveranser**: Kostar typiskt 2,000-3,000 SEK per tillfälle
+- **Total spending**: 138,627 SEK över 13 månader (avg 10,664 SEK/månad)
+- **Coca Cola Zero**: 3,425 SEK totalt (~189 liter)
 - **Kattmat**: 4,881 SEK totalt (348 produkter)
 
 ## Filsökvägar i skript

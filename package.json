@@ -14,7 +14,10 @@
     "analyze-combined": "node reports/analyze-combined.cjs",
     "update-willys": "node scripts/update-receipts.cjs",
     "update-ica": "node scripts/update-ica.cjs",
-    "remove-duplicates": "node scripts/remove-duplicates.cjs"
+    "remove-duplicates": "node scripts/remove-duplicates.cjs",
+    "sync-willys": "node fetch-receipts.js && node scripts/update-receipts.cjs",
+    "sync-ica": "node fetch-ica-kivra.js && node scripts/update-ica.cjs",
+    "sync-all": "npm run sync-willys && npm run sync-ica"
   },
   "keywords": [
     "willys",
@@ -24,6 +27,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^17.3.1",
     "pdf-parse": "^2.4.5",
     "playwright": "^1.48.0"
   }
