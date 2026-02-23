@@ -11,51 +11,51 @@ console.log('╚═════════════════════�
 const options = [
   {
     key: '1',
-    label: '📥 Hämta Willys-kvitton',
-    command: 'npm run willys',
-    description: 'Hämtar kvitton från Willys.se (inkrementellt om .last-fetch finns)'
+    label: '🚀 Sync Willys (REKOMMENDERAT)',
+    command: 'npm run sync-willys',
+    description: 'Hämtar nya kvitton + uppdaterar analys automatiskt'
   },
   {
     key: '2',
-    label: '📥 Hämta ICA-kvitton',
-    command: 'npm run ica',
-    description: 'Hämtar kvitton från Kivra/ICA (inkrementellt om .last-fetch finns)'
+    label: '🚀 Sync ICA (REKOMMENDERAT)',
+    command: 'npm run sync-ica',
+    description: 'Hämtar nya kvitton + uppdaterar analys automatiskt (kräver BankID)'
   },
   {
     key: '3',
-    label: '📊 Analysera Willys',
-    command: 'npm run analyze-willys',
-    description: 'Analyserar alla Willys-kvitton → willys-analysis.json'
+    label: '🚀 Sync Allt (REKOMMENDERAT)',
+    command: 'npm run sync-all',
+    description: 'Synkar både Willys och ICA i ett kommando'
   },
   {
     key: '4',
-    label: '📊 Analysera ICA',
-    command: 'npm run analyze-ica',
-    description: 'Analyserar alla ICA-kvitton → ica-analysis.json'
+    label: '📥 Hämta Willys-kvitton',
+    command: 'npm run willys',
+    description: 'Bara hämta kvitton från Willys.se (utan uppdatering)'
   },
   {
     key: '5',
-    label: '📊 Kombinerad analys',
-    command: 'npm run analyze-combined',
-    description: 'Kombinerar Willys + ICA → combined-analysis.json'
+    label: '📥 Hämta ICA-kvitton',
+    command: 'npm run ica',
+    description: 'Bara hämta kvitton från Kivra/ICA (utan uppdatering)'
   },
   {
     key: '6',
-    label: '⚡ Uppdatera Willys (snabbt)',
+    label: '⚡ Uppdatera Willys',
     command: 'npm run update-willys',
-    description: 'Uppdaterar Willys-analys med nya kvitton (inkrementellt)'
+    description: 'Bara uppdatera Willys-analys från befintliga PDF:er'
   },
   {
     key: '7',
-    label: '⚡ Uppdatera ICA (snabbt)',
+    label: '⚡ Uppdatera ICA',
     command: 'npm run update-ica',
-    description: 'Uppdaterar ICA-analys med nya kvitton (inkrementellt)'
+    description: 'Bara uppdatera ICA-analys från befintliga PDF:er'
   },
   {
     key: '8',
-    label: '🔄 Komplett uppdatering (allt)',
-    command: 'update-all',
-    description: 'Hämtar + uppdaterar Willys & ICA + kombinerad analys'
+    label: '📊 Kombinerad analys',
+    command: 'npm run analyze-combined',
+    description: 'Kombinerar Willys + ICA → combined-analysis.json'
   },
   {
     key: '9',
@@ -107,20 +107,21 @@ function showHelp() {
   console.log('║                    📖 HJÄLP & DOKUMENTATION                   ║');
   console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
-  console.log('🛒 HÄMTA KVITTON:\n');
+  console.log('🚀 SYNC (REKOMMENDERAT - Fetch + Update i ett steg):\n');
+  console.log('  npm run sync-willys         # Hämta + uppdatera Willys');
+  console.log('  npm run sync-ica            # Hämta + uppdatera ICA (BankID krävs)');
+  console.log('  npm run sync-all            # Synka både Willys och ICA\n');
+
+  console.log('🛒 HÄMTA KVITTON (Separata steg):\n');
   console.log('  npm run willys              # Hämta Willys-kvitton');
   console.log('  npm run willys -- 6         # Hämta 6 månader (första gången)');
   console.log('  npm run ica                 # Hämta ICA-kvitton');
   console.log('  npm run ica -- 3            # Hämta 3 månader (första gången)\n');
 
-  console.log('📊 ANALYSERA:\n');
-  console.log('  npm run analyze-willys      # Analysera alla Willys-kvitton');
-  console.log('  npm run analyze-ica         # Analysera alla ICA-kvitton');
-  console.log('  npm run analyze-combined    # Kombinerad analys (båda)\n');
-
-  console.log('⚡ SNABB UPPDATERING:\n');
+  console.log('⚡ UPPDATERA ANALYS (Separata steg):\n');
   console.log('  npm run update-willys       # Uppdatera Willys (bara nya)');
-  console.log('  npm run update-ica          # Uppdatera ICA (bara nya)\n');
+  console.log('  npm run update-ica          # Uppdatera ICA (bara nya)');
+  console.log('  npm run analyze-combined    # Kombinerad analys (båda)\n');
 
   console.log('📊 RAPPORTER:\n');
   console.log('  node run-report.cjs                 # Interaktiv meny med 22 rapporter\n');
@@ -133,8 +134,13 @@ function showHelp() {
   console.log('  node reports/analyze-coke-zero.cjs  # Coca Cola Zero analys\n');
 
   console.log('🧹 DATAUNDERHÅLL:\n');
-  console.log('  npm run remove-duplicates   # Ta bort dubblettkvitton');
-  console.log('  node scripts/check-duplicates.cjs   # Kontrollera om dubbletter finns\n');
+  console.log('  node scripts/check-willys-duplicates.cjs   # Kontrollera Willys-dubbletter');
+  console.log('  node scripts/remove-willys-duplicates.cjs  # Ta bort Willys-dubbletter');
+  console.log('  npm run remove-duplicates                  # Ta bort alla dubbletter\n');
+
+  console.log('🔧 HJÄLPSKRIPT:\n');
+  console.log('  node scripts/show-latest-willys.cjs        # Visa senaste Willys-kvittot');
+  console.log('  node scripts/check-dates.cjs               # Inspektera datumfält\n');
 
   console.log('📁 GENERERADE FILER:\n');
   console.log('  output/willys-analysis.json');
@@ -144,9 +150,10 @@ function showHelp() {
   console.log('  receipts/.last-fetch-ica.json\n');
 
   console.log('💡 TIPS:\n');
-  console.log('  • Första gången: kör "Hämta" → "Analysera"');
-  console.log('  • Daglig uppdatering: använd "Uppdatera" (snabbare!)');
-  console.log('  • Komplett uppdatering inkluderar automatisk dubblettborttagning');
+  console.log('  • 🚀 Använd sync-kommandon (1-3) för enklast uppdatering!');
+  console.log('  • Första gången: "npm run sync-all" eller menyn');
+  console.log('  • Veckovis: "npm run sync-all" för att hålla data fräsch');
+  console.log('  • Dublikatkontroll: Automatisk i fetch-skript (skippar redan nedladdade)');
   console.log('  • Ta bort .last-fetch för att börja om från början\n');
 
   console.log('Tryck ENTER för att återgå till menyn...');
