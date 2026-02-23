@@ -765,30 +765,91 @@ async function fetchWillysReceipts() {
 
       await usernameField.fill(username);
       console.log('✅ Fyllde i användarnamn');
+
+      // Hitta och fyll i lösenordsfält
+      console.log('🔍 Letar efter lösenordsfält...');
+      const passwordSelectors = ['input[name="password"]', 'input[type="password"]'];
+      let passwordField = null;
+      for (const selector of passwordSelectors) {
+        try {
+          passwordField = await page.waitForSelector(selector, { timeout: 2000 });
+          if (passwordField) break;
+        } catch (e) { continue; }
+      }
+
+      if (!passwordField) {
+        console.log('⚠️  Kunde inte hitta lösenordsfält, växlar till manuell inloggning');
+      } else {
+        await passwordField.fill(password);
+        console.log('✅ Fyllde i lösenord');
+
+        // Hitta och klicka på inloggningsknapp
+        console.log('🔍 Letar efter inloggningsknapp...');
+        await page.waitForTimeout(500);
+
+        const loginButtonSelectors = [
+          'button[type="submit"]',
+          'button:has-text("Logga in")',
+          'button:has-text("Logga In")',
+          'input[type="submit"]',
+          '[data-testid*="login"]'
+        ];
+
+        let loginClicked = false;
+        for (const selector of loginButtonSelectors) {
+          try {
+            const loginButton = await page.waitForSelector(selector, { timeout: 2000 });
+            if (loginButton && await loginButton.isVisible()) {
+              await loginButton.click();
+              console.log('✅ Klickade på inloggningsknapp');
+              loginClicked = true;
+              break;
+            }
+          } catch (e) { continue; }
+        }
+
+        if (!loginClicked) {
+          console.log('⚠️  Kunde inte hitta inloggningsknapp');
+        } else {
+          // Vänta på att inloggningen ska lyckas
+          console.log('⏳ Väntar på inloggning...');
+          try {
+            await page.waitForURL(/mina-kop|receipts|kvitton/i, { timeout: 15000 });
+            console.log('✅ Inloggning lyckades automatiskt!');
+          } catch (e) {
+            console.log('⚠️  Timeout vid inloggning, kontrollerar manuellt...');
+          }
+        }
+      }
     }
 
-    console.log('\n' + '='.repeat(60));
-    console.log('⏸️  MANUELL INLOGGNING');
-    console.log('='.repeat(60));
-    if (manualLogin) {
-      console.log('👉 Fyll i ditt personnummer i webbläsaren');
-      console.log('👉 Fyll i ditt lösenord');
-    } else {
-      console.log('👉 Fyll i ditt lösenord i webbläsaren');
-    }
-    console.log('👉 Klicka på "Logga in"-knappen');
-    console.log('👉 Vänta tills du ser "Mina köp"-sidan');
-    console.log('='.repeat(60));
-    console.log('\nTryck ENTER när du är inloggad...');
+    // Fallback till manuell inloggning om automatisk misslyckades
+    if (manualLogin || !page.url().match(/mina-kop|receipts|kvitton/i)) {
+      console.log('\n' + '='.repeat(60));
+      console.log('⏸️  MANUELL INLOGGNING');
+      console.log('='.repeat(60));
+      if (manualLogin) {
+        console.log('👉 Fyll i ditt personnummer i webbläsaren');
+        console.log('👉 Fyll i ditt lösenord');
+        console.log('👉 Klicka på "Logga in"-knappen');
+      } else {
+        console.log('👉 Verifiera att du är inloggad');
+      }
+      console.log('👉 Vänta tills du ser "Mina köp"-sidan');
+      console.log('='.repeat(60));
+      console.log('\nTryck ENTER när du är inloggad...');
 
-    // Vänta på att användaren trycker Enter
-    await new Promise((resolve) => {
-      process.stdin.once('data', () => {
-        resolve();
+      // Vänta på att användaren trycker Enter
+      await new Promise((resolve) => {
+        process.stdin.once('data', () => {
+          resolve();
+        });
       });
-    });
 
-    console.log('✅ Fortsätter efter manuell inloggning...');
+      console.log('✅ Fortsätter efter manuell inloggning...');
+    } else {
+      console.log('✅ Fortsätter efter automatisk inloggning...');
+    }
 
     // Gå till kvittosidan (om vi inte redan är där)
     console.log(`\n📄 Säkerställer att vi är på kvittosidan: ${CONFIG.receiptsUrl}`);
