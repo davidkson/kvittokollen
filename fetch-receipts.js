@@ -56,6 +56,9 @@ function saveLastFetchDate(date) {
   }
 }
 
+// Map för att hålla befintliga kvitton per datum med filstorlekar
+const existingReceiptsByDate = new Map();
+
 // Funktion för att läsa befintliga kvitton och förhindra dubbletter
 function loadExistingReceipts() {
   try {
@@ -78,16 +81,36 @@ function loadExistingReceipts() {
       });
 
       console.log(`📋 Laddade ${existingReceipts.length} befintliga kvitton från tidigare körningar`);
-      return existingReceipts.length;
     }
 
-    // Kolla också i output-katalogen efter PDF-filer
+    // Läs alla befintliga PDF-filer med datum och filstorlek
     if (fs.existsSync(CONFIG.outputDir)) {
       const pdfFiles = fs.readdirSync(CONFIG.outputDir).filter(f => f.endsWith('.pdf'));
-      pdfFiles.forEach(file => downloadedFiles.add(file));
+
+      pdfFiles.forEach(file => {
+        downloadedFiles.add(file);
+
+        // Extrahera datum från filnamn (kvitto_YYYY-MM-DD_X.pdf)
+        const dateMatch = file.match(/kvitto_(\d{4}-\d{2}-\d{2})_/);
+        if (dateMatch) {
+          const date = dateMatch[1];
+          const filePath = path.join(CONFIG.outputDir, file);
+          const stats = fs.statSync(filePath);
+
+          // Spara datum -> filstorlek mapping
+          if (!existingReceiptsByDate.has(date)) {
+            existingReceiptsByDate.set(date, []);
+          }
+          existingReceiptsByDate.get(date).push({
+            filename: file,
+            size: stats.size
+          });
+        }
+      });
 
       if (pdfFiles.length > 0) {
-        console.log(`📋 Hittade ${pdfFiles.length} befintliga PDF-filer i ${CONFIG.outputDir}`);
+        console.log(`📋 Hittade ${pdfFiles.length} befintliga PDF-filer`);
+        console.log(`📋 Spårar ${existingReceiptsByDate.size} unika datum för dublikatkontroll`);
       }
       return pdfFiles.length;
     }
@@ -352,11 +375,40 @@ async function downloadReceipts(page, receiptUrls, batchNumber) {
         return Array.from(new Uint8Array(arrayBuffer));
       }, receipt.url);
 
-      // Spara som PDF
-      const pdfFilePath = path.join(CONFIG.outputDir, `${fileName}.pdf`);
       const buffer = Buffer.from(pdfBuffer);
+      const fileSize = buffer.length;
+
+      // Kolla om vi redan har ett kvitto med samma datum och storlek (dubblett!)
+      if (dateMatch) {
+        const date = dateMatch[1];
+        const existingFiles = existingReceiptsByDate.get(date);
+
+        if (existingFiles) {
+          const duplicate = existingFiles.find(f => f.size === fileSize);
+          if (duplicate) {
+            console.log(`  ⚠️  DUBBLETT upptäckt! Samma storlek (${fileSize} bytes) som ${duplicate.filename}`);
+            console.log(`  🚫 Skippar nedladdning`);
+            continue; // Skippa detta kvitto
+          }
+        }
+      }
+
+      // Spara som PDF (inte en dubblett)
+      const pdfFilePath = path.join(CONFIG.outputDir, `${fileName}.pdf`);
       fs.writeFileSync(pdfFilePath, buffer);
-      console.log(`  ✅ Sparad: ${fileName}.pdf (${buffer.length} bytes)`);
+      console.log(`  ✅ Sparad: ${fileName}.pdf (${fileSize} bytes)`);
+
+      // Uppdatera vår dubblettmap med den nya filen
+      if (dateMatch) {
+        const date = dateMatch[1];
+        if (!existingReceiptsByDate.has(date)) {
+          existingReceiptsByDate.set(date, []);
+        }
+        existingReceiptsByDate.get(date).push({
+          filename: `${fileName}.pdf`,
+          size: fileSize
+        });
+      }
 
       // Markera som nedladdad (både URL och filnamn)
       downloadedUrls.add(receipt.url);
