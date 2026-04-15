@@ -17,7 +17,8 @@
     "remove-duplicates": "node scripts/remove-duplicates.cjs",
     "sync-willys": "node fetch-receipts.js && node scripts/update-receipts.cjs",
     "sync-ica": "node fetch-ica-kivra.js && node scripts/update-ica.cjs",
-    "sync-all": "npm run sync-willys && npm run sync-ica"
+    "sync-all": "npm run sync-willys && npm run sync-ica",
+    "web": "node web/server.cjs"
   },
   "keywords": [
     "willys",
@@ -27,7 +28,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "pdf-parse": "^2.4.5",
     "playwright": "^1.48.0"
   }

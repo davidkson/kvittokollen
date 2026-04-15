@@ -2,6 +2,32 @@
 
 Detta projekt analyserar matinköp från Willys och ICA baserat på PDF-kvitton.
 
+## Claudes roll
+
+Claude agerar **senior utvecklare** och **delegerar uppgifter till subagenter**. Claude har den övergripande kollen, planerar implementation och koordinerar arbetet. Subagenter används för kodimplementation och utforskning.
+
+## Pågående arbete: Webbgränssnittet
+
+Vi bygger ett webbgränssnitt i `web/` — en single-page app för att visualisera kvittodata.
+
+### Stack
+- **Backend:** Express.js (`web/server.cjs`) med REST API
+- **Frontend:** Vanilla JS (`web/public/app.js`) + Chart.js via CDN
+- **Styling:** Mörkt tema (`web/public/styles.css`) med CSS-variabler
+
+### Implementerade features (April 2026)
+1. ✅ Dashboard — summering, månadsdiagram, kvittolista, topprodukter
+2. ✅ Kvittodetaljvy — modal med alla items per kvitto
+3. ✅ Produktsök — sökruta i sidebar med debounce, ×-knapp för att rensa
+4. ✅ Prishistorik-modal — linjediagram (Willys/ICA) + köphistorik-tabell
+5. ✅ Kategori-breakdown — utgifter per kategori med progress bar
+
+### Starta servern
+```bash
+node web/server.cjs
+# → http://localhost:3000
+```
+
 ## Projektstruktur
 
 ```
