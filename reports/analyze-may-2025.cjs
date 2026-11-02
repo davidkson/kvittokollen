@@ -1,15 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, calculateTotal } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
-
-// Beräkna korrekt total från items (för Willys)
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Filtrera kvitton från maj 2025
 function getMayReceipts(receipts, chain) {

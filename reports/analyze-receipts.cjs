@@ -16,10 +16,11 @@ const { parseAllReceipts } = require('../lib/receipt-parser.cjs');
 const { categorizeAllItems, getUncategorizedItems } = require('../lib/categorizer.cjs');
 const { analyzeReceipts } = require('../lib/analyzer.cjs');
 const { generateAllReports } = require('../lib/report-generator.cjs');
+const { outputDir } = require('../lib/data.cjs');
 
 // Configuration
 const RECEIPTS_DIR = path.join(__dirname, '../receipts/willys');
-const OUTPUT_DIR = path.join(__dirname, '../output');
+const OUTPUT_DIR = outputDir();
 
 /**
  * Main analysis pipeline

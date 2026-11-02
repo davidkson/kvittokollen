@@ -1,7 +1,7 @@
-const fs = require('fs');
+const { loadWillys, loadIca } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('./output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('./output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Samla alla produkter med datum och pris
 const productPrices = new Map();

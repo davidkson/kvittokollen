@@ -9,11 +9,12 @@
 const fs = require('fs');
 const path = require('path');
 const { PDFParse } = require('pdf-parse');
+const { outputDir } = require('../lib/data.cjs');
 
 // Configuration
-const WILLYS_ANALYSIS = path.join(__dirname, '../output/willys-analysis.json');
-const ICA_ANALYSIS = path.join(__dirname, '../output/ica-analysis.json');
-const COMBINED_ANALYSIS = path.join(__dirname, '../output/combined-analysis.json');
+const WILLYS_ANALYSIS = path.join(outputDir(), 'willys-analysis.json');
+const ICA_ANALYSIS = path.join(outputDir(), 'ica-analysis.json');
+const COMBINED_ANALYSIS = path.join(outputDir(), 'combined-analysis.json');
 const ICA_RECEIPTS = path.join(__dirname, '../receipts/ica/ica-receipts.json');
 const RECEIPTS_DIR = path.join(__dirname, '../receipts/ica');
 
@@ -132,7 +133,7 @@ function loadWillysReceipts() {
     const total = receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
 
     receipts.push({
-      fileName: receipt.metadata.fileName,
+      fileName: receipt.filename,
       date: receipt.metadata.date,
       total: total,
       store: receipt.metadata.store || 'Willys',

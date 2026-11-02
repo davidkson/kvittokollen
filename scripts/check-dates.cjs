@@ -1,4 +1,6 @@
-const data = require('../output/willys-analysis.json');
+const { loadWillys } = require('../lib/data.cjs');
+
+const data = loadWillys();
 
 console.log('Kollar datum för kvitton 87-93 (före rensning av dubbletter):\n');
 

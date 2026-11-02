@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isCokeZero } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║         🥤 ALLA COCA COLA ZERO PRODUKTNAMN 🥤                ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-const cokePattern = /coca.{0,5}cola.{0,10}zero|cola.{0,5}zero|coke.{0,5}zero|koffeinfri.{0,5}zero/i;
 
 const products = {};
 
 function collectProducts(receipts, chain) {
   for (const receipt of receipts) {
     for (const item of receipt.items || []) {
-      if (cokePattern.test(item.name) && item.totalPrice >= 0) {
+      if (isCokeZero(item.name) && item.totalPrice >= 0) {
         const name = item.name;
 
         if (!products[name]) {

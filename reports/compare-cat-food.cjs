@@ -1,32 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isLikelyCatFood } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Keywords for cat food
 const catFoodKeywords = /kattmat|katt|felix|whiskas|sheba|gourmet|perfect fit|whis|kattstick|kattsnacks/i;
 const excludePattern = /mjölk/i;
-
-// ICA-specifika mönster (tonfisk/lax med sås/mousse/filet = kattmat)
-function isLikelyCatFood(name, price) {
-  // Exkludera uppenbart mänsklig mat
-  if (/bröd|ost|yoghurt|korv|hamburgare|pizza|soppa|grädde|smör|sallad|pasta|ris/i.test(name)) {
-    return false;
-  }
-
-  // ICA-mönster: Fisk + textur + lågt pris = kattmat
-  const hasFish = /tonfisk|lax|fisk/i.test(name);
-  const hasTexture = /sås|mousse|filet|paté|gelé/i.test(name);
-  const lowPrice = price < 100;
-
-  if (hasFish && hasTexture && lowPrice) {
-    return true;
-  }
-
-  return false;
-}
 
 function findCatFood(data, store) {
   const items = [];

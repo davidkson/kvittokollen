@@ -10,10 +10,12 @@ const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const { PDFParse } = require('pdf-parse');
+const { parseItems, extractDate, extractStore, calculateGrandTotal } = require('../lib/ica-parser.cjs');
+const { outputDir } = require('../lib/data.cjs');
 
 // Configuration
 const RECEIPTS_DIR = path.join(__dirname, '../receipts/ica');
-const JSON_OUTPUT = path.join(__dirname, '../output', 'ica-analysis.json');
+const JSON_OUTPUT = path.join(outputDir(), 'ica-analysis.json');
 
 /**
  * Extract text from PDF
@@ -26,139 +28,6 @@ async function extractPdfText(pdfPath) {
   const result = await parser.getText();
   await parser.destroy();
   return result.text;
-}
-
-/**
- * Parse date from ICA receipt text
- */
-function extractDate(text) {
-  const dateMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
-  if (dateMatch) {
-    return new Date(dateMatch[1]).toISOString();
-  }
-  return null;
-}
-
-/**
- * Extract store name from ICA receipt
- */
-function extractStore(text) {
-  const storeMatch = text.match(/(Maxi ICA [^\n]+|ICA [^\n]+)/i);
-  if (storeMatch) {
-    return storeMatch[1].trim().split('\n')[0];
-  }
-  return 'ICA';
-}
-
-/**
- * Simple categorization based on product name
- */
-function categorizeItem(name) {
-  const nameLower = name.toLowerCase();
-
-  if (nameLower.match(/mjölk|yoghurt|fil|kvarg|grädde|smör|ost|mozzarella/)) return 'Dairy';
-  if (nameLower.match(/kött|fläsk|korv|köttfärs|kalkon|kyckling|bacon|skinka|medaljong/)) return 'Meat & Protein';
-  if (nameLower.match(/banan|äpple|tomat|paprika|vitlök|champinjon|sallad|frukt|grönsak/)) return 'Fruit & Vegetables';
-  if (nameLower.match(/dryck|läsk|juice|vatten|kaffe|te\b|öl|vin|sprit/)) return 'Beverages';
-  if (nameLower.match(/nudlar|pasta|ris|mjöl|socker|salt|kryddor|olja|sås|buljong|müsli|russin|vanilj/)) return 'Pantry Staples';
-  if (nameLower.match(/fryst|glass/)) return 'Frozen Foods';
-  if (nameLower.match(/bröd|kaka|tårta|bulle|choklad|godis|daim|helnöt/)) return 'Bakery & Sweets';
-  if (nameLower.match(/deo|schampo|tvål|tandkräm|rakhyvel/)) return 'Personal Care';
-  if (nameLower.match(/disk|tvätt|papper|påse|miljökasse/)) return 'Household';
-  if (nameLower.match(/t-shirt|tröja|byxor|klänning|kläder/)) return 'Clothing';
-
-  return 'Uncategorized';
-}
-
-/**
- * Parse items from ICA receipt
- */
-function parseItems(text) {
-  const items = [];
-  const lines = text.split('\n');
-  let inItemSection = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-
-    if (line.includes('Beskrivning') && line.includes('Artikelnummer')) {
-      inItemSection = true;
-      continue;
-    }
-
-    if (inItemSection && (line.includes('Betalat') || line.includes('Moms %'))) {
-      break;
-    }
-
-    if (!inItemSection || !line) continue;
-
-    // Check if this is a discounted item (starts with *)
-    const isDiscounted = line.startsWith('*');
-
-    // Match item line
-    const itemMatch = line.match(/^(\*)?(.+?)\s+(\d{7,})\s+([\d,\.]+)\s+([\d,\.]+)\s+(st|kg|l|m|g|ml|cl|fp|hg|dl|förp)?\s*([\d,\.\-]+)$/);
-
-    if (itemMatch) {
-      const name = itemMatch[2].trim();
-      const unitPrice = parseFloat(itemMatch[4].replace(',', '.'));
-      const quantity = parseFloat(itemMatch[5].replace(',', '.'));
-      const originalPrice = parseFloat(itemMatch[7].replace(',', '.'));
-
-      let finalPrice = originalPrice;
-      let discount = 0;
-
-      // If discounted, check next line for discount amount
-      if (isDiscounted && i + 1 < lines.length) {
-        const nextLine = lines[i + 1].trim();
-        const discountMatch = nextLine.match(/^(.+?)\s+([\-\d,\.]+)$/);
-
-        if (discountMatch) {
-          discount = parseFloat(discountMatch[2].replace(',', '.'));
-          finalPrice = originalPrice + discount; // discount is negative
-          i++; // Skip next line since we've processed it
-        }
-      }
-
-      items.push({
-        name: name,
-        quantity: quantity,
-        unitPrice: finalPrice / quantity,
-        totalPrice: finalPrice,
-        originalPrice: isDiscounted ? originalPrice : undefined,
-        discount: isDiscounted ? Math.abs(discount) : undefined,
-        category: categorizeItem(name)
-      });
-    }
-    // Handle standalone discount lines (pant, etc)
-    else if (line.includes('-') && line.match(/([\d,\.]+)$/) && !line.match(/\d{7,}/)) {
-      const discountMatch = line.match(/^(.+?)\s+([\-\d,\.]+)$/);
-      if (discountMatch) {
-        const name = discountMatch[1].trim();
-        const totalPrice = parseFloat(discountMatch[2].replace(',', '.'));
-
-        // Only add if it's truly a standalone discount (not part of a product)
-        if (totalPrice < 0 && !line.match(/\d{7,}/)) {
-          items.push({
-            name: name,
-            quantity: 1,
-            unitPrice: totalPrice,
-            totalPrice: totalPrice,
-            isDiscount: true,
-            category: 'Discounts & Offers'
-          });
-        }
-      }
-    }
-  }
-
-  return items;
-}
-
-/**
- * Calculate grand total from items
- */
-function calculateGrandTotal(items) {
-  return items.reduce((sum, item) => sum + item.totalPrice, 0);
 }
 
 /**

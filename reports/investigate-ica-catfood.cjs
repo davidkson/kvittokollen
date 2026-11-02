@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadIca } = require('../lib/data.cjs');
 
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║         🔍 UNDERSÖKNING - ICA KATTMATSBENÄMNINGAR            ║');

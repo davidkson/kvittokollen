@@ -11,11 +11,12 @@ const fsSync = require('fs');
 const path = require('path');
 const { extractPdfText } = require('../lib/pdf-extractor.cjs');
 const { parseReceipt } = require('../lib/receipt-parser.cjs');
-const { categorizeItem } = require('../lib/categorizer.cjs');
+const { categorizeReceiptItem } = require('../lib/categorizer.cjs');
+const { outputDir } = require('../lib/data.cjs');
 
 // Configuration
 const RECEIPTS_DIR = path.join(__dirname, '../receipts/willys');
-const JSON_OUTPUT = path.join(__dirname, '../output', 'willys-analysis.json');
+const JSON_OUTPUT = path.join(outputDir(), 'willys-analysis.json');
 
 /**
  * Load existing analysis data
@@ -76,7 +77,7 @@ async function processNewReceipt(filename) {
   // Categorize items
   const categorizedItems = parsed.items.map(item => ({
     ...item,
-    category: categorizeItem(item.name)
+    category: categorizeReceiptItem(item)
   }));
 
   return {

@@ -1,38 +1,16 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, CAT_FOOD_PATTERN, isLikelyCatFood } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🐱 KATTMATSANALYS - MÅNADSVIS                    ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
 // Kattmats-keywords (exkludera kattmjölk)
-const catFoodPattern = /kattmat|felix|whiskas|sheba|gourmet|dreamies|perfect fit|catessy|whis|kattstick|kattsnacks/i;
 const excludePattern = /mjölk/i;
-
-// ICA-specifika mönster (tonfisk/lax med sås/mousse/filet = kattmat)
-function isLikelyCatFood(name, price) {
-  const nameLower = name.toLowerCase();
-
-  // Exkludera uppenbart mänsklig mat
-  if (/bröd|ost|yoghurt|korv|hamburgare|pizza|soppa|grädde|smör|sallad|pasta|ris/i.test(name)) {
-    return false;
-  }
-
-  // ICA-mönster: Fisk + textur + lågt pris = kattmat
-  const hasFish = /tonfisk|lax|fisk/i.test(name);
-  const hasTexture = /sås|mousse|filet|paté|gelé/i.test(name);
-  const lowPrice = price < 100; // Kattmat är oftast billigt per enhet
-
-  if (hasFish && hasTexture && lowPrice) {
-    return true;
-  }
-
-  return false;
-}
 
 // Samla all kattmat
 const allCatFood = [];
@@ -41,7 +19,7 @@ function collectCatFood(receipts, chain) {
   for (const receipt of receipts) {
     const date = receipt.metadata?.date || '';
     for (const item of receipt.items || []) {
-      const matchesPattern = catFoodPattern.test(item.name);
+      const matchesPattern = CAT_FOOD_PATTERN.test(item.name);
       const isIcaCatFood = isLikelyCatFood(item.name, item.totalPrice);
       const notMilk = !excludePattern.test(item.name);
       const notDiscount = item.totalPrice >= 0; // Exkludera kampanjrabatter (negativa)

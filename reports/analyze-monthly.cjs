@@ -1,4 +1,6 @@
-const data = require('../output/willys-analysis.json');
+const { loadWillys } = require('../lib/data.cjs');
+
+const data = loadWillys();
 
 // Monthly breakdown
 const monthlyData = {};

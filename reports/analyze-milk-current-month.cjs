@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isMilk } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Dagens datum
 const today = new Date();
@@ -33,7 +33,7 @@ function collectMonthMilk(receipts, chain) {
     if (date.getFullYear() === currentYear && date.getMonth() + 1 === currentMonth) {
       for (const item of receipt.items || []) {
         // Filtrera bort choklad, godis och kattmjölk
-        if (/mjölk/i.test(item.name) && !/choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|bounty/i.test(item.name)) {
+        if (isMilk(item.name)) {
           // Försök extrahera volym
           let litersPerUnit = 1;
           if (/0,5|500ml|5dl/i.test(item.name)) litersPerUnit = 0.5;
@@ -120,7 +120,7 @@ let allMilk = [];
 function collectAllMilk(receipts, chain) {
   for (const receipt of receipts) {
     for (const item of receipt.items || []) {
-      if (/mjölk/i.test(item.name) && !/choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|bounty/i.test(item.name)) {
+      if (isMilk(item.name)) {
         let litersPerUnit = 1;
         if (/0,5|500ml|5dl/i.test(item.name)) litersPerUnit = 0.5;
         if (/1,5|1\.5|1500ml|15dl/i.test(item.name)) litersPerUnit = 1.5;

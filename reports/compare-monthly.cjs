@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, calculateTotal } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Svenska månadnamn
 const monthNames = {
@@ -11,12 +11,6 @@ const monthNames = {
   '05': 'Maj', '06': 'Juni', '07': 'Juli', '08': 'Augusti',
   '09': 'September', '10': 'Oktober', '11': 'November', '12': 'December'
 };
-
-// Beräkna korrekt total från items
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
 
 // Gruppera kvitton per månad
 function groupByMonth(receipts, chain) {

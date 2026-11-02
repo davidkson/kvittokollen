@@ -1,27 +1,16 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, CAT_FOOD_PATTERN, isLikelyCatFood } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║          🐱 KATTMAT - KOMPLETT SAMMANSTÄLLNING 🐱            ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
 
 // Kattmats-filter
-const catFoodPattern = /kattmat|felix|whiskas|sheba|gourmet|dreamies|perfect fit|catessy|whis|kattstick|kattsnacks/i;
 const excludePattern = /mjölk/i;
-
-function isLikelyCatFood(name, price) {
-  if (/bröd|ost|yoghurt|korv|hamburgare|pizza|soppa|grädde|smör|sallad|pasta|ris/i.test(name)) {
-    return false;
-  }
-  const hasFish = /tonfisk|lax|fisk/i.test(name);
-  const hasTexture = /sås|mousse|filet|paté|gelé/i.test(name);
-  const lowPrice = price < 100;
-  return hasFish && hasTexture && lowPrice;
-}
 
 // Samla all kattmat
 const allCatFood = [];
@@ -30,7 +19,7 @@ function collectCatFood(receipts, chain) {
   for (const receipt of receipts) {
     const date = receipt.metadata?.date || '';
     for (const item of receipt.items || []) {
-      const matchesPattern = catFoodPattern.test(item.name);
+      const matchesPattern = CAT_FOOD_PATTERN.test(item.name);
       const isIcaCatFood = isLikelyCatFood(item.name, item.totalPrice);
       const notMilk = !excludePattern.test(item.name);
       const notDiscount = item.totalPrice >= 0;

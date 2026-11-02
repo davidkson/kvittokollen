@@ -1,4 +1,6 @@
-const data = require('../output/willys-analysis.json');
+const { loadWillys } = require('../lib/data.cjs');
+
+const data = loadWillys();
 
 // Hitta senaste kvittot baserat på datum
 const receipts = data.receipts.filter(r => r.metadata?.date);

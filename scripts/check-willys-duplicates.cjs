@@ -1,15 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+const { loadWillys, calculateTotal } = require('../lib/data.cjs');
 
 /**
  * Kontrollerar Willys-kvitton för dubbletter baserat på content signature
  * Signatur: datum|totalsumma|antal items|items signatur
  */
-
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
 
 function createItemsSignature(items) {
   if (!items || !Array.isArray(items)) return '';
@@ -20,7 +14,7 @@ function createItemsSignature(items) {
 }
 
 function createContentSignature(receipt) {
-  const date = receipt.date || receipt.receiptDate || 'unknown';
+  const date = receipt.metadata?.date || receipt.date || receipt.receiptDate || 'unknown';
   const total = calculateTotal(receipt).toFixed(2);
   const itemCount = receipt.items?.length || 0;
   const itemsSignature = createItemsSignature(receipt.items);
@@ -29,10 +23,8 @@ function createContentSignature(receipt) {
 }
 
 function checkDuplicates() {
-  const willysPath = path.join(__dirname, '../output/willys-analysis.json');
-
   console.log('Läser Willys-data...');
-  const data = JSON.parse(fs.readFileSync(willysPath, 'utf8'));
+  const data = loadWillys();
 
   const receipts = data.receipts || [];
   console.log(`Total antal kvitton: ${receipts.length}\n`);
@@ -49,17 +41,17 @@ function checkDuplicates() {
         signature,
         original: {
           index: original.index,
-          date: original.receipt.date || original.receipt.receiptDate,
+          date: original.receipt.metadata?.date || original.receipt.date || original.receipt.receiptDate,
           total: calculateTotal(original.receipt).toFixed(2),
           items: original.receipt.items?.length || 0,
-          fileName: original.receipt.fileName
+          fileName: original.receipt.filename
         },
         duplicate: {
           index: index,
-          date: receipt.date || receipt.receiptDate,
+          date: receipt.metadata?.date || receipt.date || receipt.receiptDate,
           total: calculateTotal(receipt).toFixed(2),
           items: receipt.items?.length || 0,
-          fileName: receipt.fileName
+          fileName: receipt.filename
         }
       });
     } else {

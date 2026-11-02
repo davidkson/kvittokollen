@@ -44,6 +44,13 @@ kvitto-analys/
 └── README.md
 ```
 
+## Gemensamma moduler (använd dessa – kopiera inte logik)
+
+- `lib/data.cjs` — `loadWillys()`/`loadIca()` (fungerar från valfri katalog, `KVITTO_OUTPUT_DIR` för att peka om), `receiptTotal(receipt, store)`, `calculateTotal`, `isMilk`, `isCokeZero`, `isCatFood`, `monthKey`
+- `lib/categorizer.cjs` — en gemensam kategorisering för Willys och ICA (`categorizeItem(name, {price, isDiscount})`). Efter regeländring: `npm run recategorize -- --dry-run`, sedan `npm run recategorize`
+- `lib/receipt-parser.cjs` (Willys) och `lib/ica-parser.cjs` (ICA) — rena textparsers
+- Tester: `npm test` (`test/*.test.cjs`, node:test). `{ todo }`-tester = kända buggar som ännu inte är fixade
+
 ## Viktiga regler
 
 ### 🚫 VIKTIGT: Filtrera bort choklad från mjölkanalyser
@@ -63,7 +70,8 @@ function isLikelyCatFood(name, price) {
     return false;
   }
   const hasFish = /tonfisk|lax|fisk/i.test(name);
-  const hasTexture = /sås|mousse|filet|paté|gelé/i.test(name);
+  // Texturordet måste vara eget ord: "Filet Kyck Tonfisk" = katt, "Laxfilet" = människa
+  const hasTexture = /(?<!\p{L})(?:sås|mousse|filet|paté|gelé)(?!\p{L})/iu.test(name);
   const lowPrice = price < 100;
   return hasFish && hasTexture && lowPrice;
 }
@@ -72,7 +80,7 @@ function isLikelyCatFood(name, price) {
 ## Data-quirks
 
 ### Willys kvitton
-- ⚠️ **grandTotal är FELAKTIG** - innehåller antal items, inte totalpris
+- ⚠️ **grandTotal är FELAKTIG i befintlig data** - innehåller antal items, inte totalpris (parsern är fixad nov 2026, men redan parsade kvitton har kvar felet)
 - ✅ Beräkna totalen från items array istället:
 ```javascript
 function calculateTotal(receipt) {

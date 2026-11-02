@@ -1,16 +1,11 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const { calculateTotal, outputDir } = require('../lib/data.cjs');
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🧹 TAR BORT DUBBLETTER                           ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-// Beräkna korrekt total från items (för Willys)
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
 
 // Skapa en "signatur" för ett kvitto baserat på innehållet
 function createReceiptSignature(receipt, chain) {
@@ -58,9 +53,8 @@ function removeDuplicates(data, chain, chainName) {
 
 // Läs in data (använd absolut sökväg baserat på script-position)
 const path = require('path');
-const outputDir = path.join(__dirname, '../output');
-const willysPath = path.join(outputDir, 'willys-analysis.json');
-const icaPath = path.join(outputDir, 'ica-analysis.json');
+const willysPath = path.join(outputDir(), 'willys-analysis.json');
+const icaPath = path.join(outputDir(), 'ica-analysis.json');
 
 const willysData = JSON.parse(fs.readFileSync(willysPath, 'utf8'));
 const icaData = JSON.parse(fs.readFileSync(icaPath, 'utf8'));

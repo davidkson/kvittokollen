@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isCokeZero } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🥤 COCA COLA ZERO - ANALYS                       ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-// Sök efter Coca Cola Zero varianter
-const cokePattern = /coca.{0,5}cola.{0,10}zero|cola.{0,5}zero|coke.{0,5}zero|koffeinfri.{0,5}zero/i;
 
 const allCoke = [];
 
@@ -18,7 +15,7 @@ function collectCoke(receipts, chain) {
   for (const receipt of receipts) {
     const date = receipt.metadata?.date || '';
     for (const item of receipt.items || []) {
-      if (cokePattern.test(item.name)) {
+      if (isCokeZero(item.name)) {
         allCoke.push({
           date,
           chain,

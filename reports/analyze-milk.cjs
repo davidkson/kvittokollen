@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isMilk } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🥛 MJÖLKANALYS - DETALJERAD ÖVERSIKT             ║');
@@ -15,7 +15,7 @@ const milkItems = [];
 for (const receipt of willysData.receipts) {
   const date = receipt.metadata?.date || '';
   for (const item of receipt.items || []) {
-    if (/mjölk/i.test(item.name) && !/choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|bounty/i.test(item.name)) {
+    if (isMilk(item.name)) {
       milkItems.push({
         ...item,
         date,
@@ -28,7 +28,7 @@ for (const receipt of willysData.receipts) {
 for (const receipt of icaData.receipts) {
   const date = receipt.metadata?.date || '';
   for (const item of receipt.items || []) {
-    if (/mjölk/i.test(item.name) && !/choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|bounty/i.test(item.name)) {
+    if (isMilk(item.name)) {
       milkItems.push({
         ...item,
         date,

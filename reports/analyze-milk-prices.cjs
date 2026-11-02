@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
+const { loadWillys, loadIca, isMilk } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('../output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('../output/ica-analysis.json', 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║         🥛 DJUPANALYS - VARFÖR ÄR MJÖLK BILLIGARE PÅ ICA?    ║');
@@ -15,7 +15,7 @@ function collectMilk(receipts, chain) {
   for (const receipt of receipts) {
     const date = receipt.metadata?.date || '';
     for (const item of receipt.items || []) {
-      if (/mjölk/i.test(item.name) && !/choklad|helnöt|daim|katt|kex|cookie|snickers|twix|mars|bounty/i.test(item.name)) {
+      if (isMilk(item.name)) {
         // Försök extrahera volym
         let litersPerUnit = 1;
         if (/0,5|500ml|5dl/i.test(item.name)) litersPerUnit = 0.5;

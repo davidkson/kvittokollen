@@ -1,21 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const { loadWillys, loadIca, calculateTotal } = require('../lib/data.cjs');
 
-const outputDir = path.join(__dirname, '../output');
-const willysData = JSON.parse(fs.readFileSync(path.join(outputDir, 'willys-analysis.json'), 'utf8'));
-const icaData = JSON.parse(fs.readFileSync(path.join(outputDir, 'ica-analysis.json'), 'utf8'));
+const willysData = loadWillys();
+const icaData = loadIca();
 
 console.log('╔════════════════════════════════════════════════════════════════╗');
 console.log('║              🔍 SÖKER EFTER DUBBLETTER                        ║');
 console.log('╚════════════════════════════════════════════════════════════════╝\n');
-
-// Beräkna korrekt total från items (för Willys)
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
 
 // Skapa en "signatur" för ett kvitto baserat på innehållet
 function createReceiptSignature(receipt, chain) {

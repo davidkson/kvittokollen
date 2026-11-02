@@ -1,15 +1,11 @@
 const fs = require('fs');
 const path = require('path');
+const { calculateTotal, outputDir } = require('../lib/data.cjs');
 
 /**
  * Tar bort dubbletter från Willys-analysis.json
  * Skapar backup innan borttagning
  */
-
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
 
 function createItemsSignature(items) {
   if (!items || !Array.isArray(items)) return '';
@@ -29,8 +25,8 @@ function createContentSignature(receipt) {
 }
 
 function removeDuplicates() {
-  const willysPath = path.join(__dirname, '../output/willys-analysis.json');
-  const backupPath = path.join(__dirname, '../output/willys-analysis.json.backup');
+  const willysPath = path.join(outputDir(), 'willys-analysis.json');
+  const backupPath = path.join(outputDir(), 'willys-analysis.json.backup');
 
   console.log('📖 Läser Willys-data...');
   const data = JSON.parse(fs.readFileSync(willysPath, 'utf8'));

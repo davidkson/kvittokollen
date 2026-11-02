@@ -1,13 +1,7 @@
-const fs = require('fs');
+const { loadWillys, loadIca, calculateTotal } = require('../lib/data.cjs');
 
-const willysData = JSON.parse(fs.readFileSync('./output/willys-analysis.json', 'utf8'));
-const icaData = JSON.parse(fs.readFileSync('./output/ica-analysis.json', 'utf8'));
-
-// Funktion för att beräkna total från items (Willys grandTotal är fel)
-function calculateTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
+const willysData = loadWillys();
+const icaData = loadIca();
 
 // Gruppera kvitton per månad
 const monthlyData = {};
