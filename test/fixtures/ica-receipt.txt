@@ -1,0 +1,15 @@
+ICA Supermarket Testby
+Testgatan 1, 000 00 Testby
+Org.nr 000000-0000
+Kvitto nr 1234  Kassa 2
+Datum 2025-03-14 17:42
+Beskrivning Artikelnummer Pris Mängd Summa(SEK)
+AXA F-müsli Guld 5701029160823 33,95 1,00 st 33,95
+*Prästost 31% 7310000000011 89,90 1,00 st 89,90
+Rabatt Prästost -20,00
+Bananer 7310000000028 24,95 0,734 kg 18,31
+Mellanmjölk 1,5% 7310000000035 14,90 2,00 st 29,80
+Bonus-rabatt -10,00
+Betalat 141,96
+Moms % Moms Netto Brutto
+12,00 15,21 126,75 141,96
