@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kvittokollen</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* styles.css only defines .hidden for some components; app.js toggles
+       .hidden on many more (containers, sections, search results). */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ===================== Sidebar ===================== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">🧾</span>
+          <span class="logo-text">Kvittokollen</span>
+        </div>
+      </div>
+
+      <div class="search-section">
+        <div class="search-input-wrap">
+          <input type="text" id="product-search" placeholder="Sök produkt..." autocomplete="off" aria-label="Sök produkt">
+          <button type="button" id="search-clear" class="search-clear hidden" aria-label="Rensa sökning">×</button>
+        </div>
+        <div id="search-results" class="search-results hidden"></div>
+      </div>
+
+      <nav class="month-nav">
+        <button type="button" id="btn-compare" class="compare-btn">⇄ Jämför månader</button>
+
+        <button type="button" id="btn-all" class="month-btn active" data-month="all">
+          <span class="month-label">Alla månader</span>
+          <span class="month-total" id="all-total">–</span>
+        </button>
+
+        <div class="month-divider"></div>
+
+        <div id="month-list" class="month-list">
+          <div class="skeleton-month"></div>
+          <div class="skeleton-month"></div>
+          <div class="skeleton-month"></div>
+          <div class="skeleton-month"></div>
+          <div class="skeleton-month"></div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="store-legend">
+          <span class="legend-dot willys-dot"></span> Willys
+          <span class="legend-dot ica-dot"></span> ICA
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===================== Main ===================== -->
+    <main class="main-content">
+
+      <!-- Summary cards -->
+      <section class="summary-section">
+        <h2 id="summary-heading" class="section-title">Alla månader</h2>
+        <div class="cards-grid">
+          <div class="card card--primary">
+            <div class="card-label">Total utgift</div>
+            <div class="card-value" id="stat-total"><div class="skeleton skeleton-value"></div></div>
+            <div class="card-sub" id="stat-period"></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Snitt / månad</div>
+            <div class="card-value" id="stat-avg-month"><div class="skeleton skeleton-value"></div></div>
+            <div class="card-sub" id="stat-months"></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Antal kvitton</div>
+            <div class="card-value" id="stat-count"><div class="skeleton skeleton-value"></div></div>
+            <div class="card-sub" id="stat-avg-receipt"></div>
+          </div>
+          <div class="card card--willys">
+            <div class="card-label">Willys</div>
+            <div class="card-value" id="stat-willys"><div class="skeleton skeleton-value"></div></div>
+            <div class="card-sub" id="stat-willys-count"></div>
+          </div>
+          <div class="card card--ica">
+            <div class="card-label">ICA</div>
+            <div class="card-value" id="stat-ica"><div class="skeleton skeleton-value"></div></div>
+            <div class="card-sub" id="stat-ica-count"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Monthly chart -->
+      <section class="chart-section">
+        <div class="section-header">
+          <h2 class="section-title">Utgifter per månad</h2>
+          <div class="chart-legend">
+            <span class="legend-chip willys-chip">Willys</span>
+            <span class="legend-chip ica-chip">ICA</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="monthly-chart"></canvas>
+          <div id="chart-loading" class="chart-loading">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Month detail (shown when a specific month is selected) -->
+      <div id="month-detail" class="month-detail hidden">
+
+        <section class="table-section">
+          <div class="section-header">
+            <h2 id="receipts-heading" class="section-title">Kvitton</h2>
+            <span id="receipts-count-badge" class="section-badge"></span>
+          </div>
+          <div id="receipts-loading" class="loading-state"><div class="spinner"></div></div>
+          <div id="receipts-error" class="error-state hidden">
+            <span class="error-icon">⚠</span>
+            <span id="receipts-error-msg">Kunde inte ladda kvitton.</span>
+          </div>
+          <div id="receipts-container" class="hidden">
+            <table class="receipts-table">
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Butik</th>
+                  <th class="align-right">Belopp</th>
+                  <th class="align-right">Varor</th>
+                </tr>
+              </thead>
+              <tbody id="receipts-body"></tbody>
+            </table>
+            <div class="row-click-hint">Klicka på ett kvitto för att se alla varor</div>
+          </div>
+        </section>
+
+        <section class="products-section">
+          <div class="section-header">
+            <h2 id="products-heading" class="section-title">Topprodukter</h2>
+          </div>
+          <div id="products-loading" class="loading-state"><div class="spinner"></div></div>
+          <div id="products-error" class="error-state hidden">
+            <span class="error-icon">⚠</span> Kunde inte ladda produkter.
+          </div>
+          <div id="products-container" class="hidden">
+            <div id="products-list" class="products-list"></div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Top products, all months -->
+      <section id="all-products-section" class="products-section">
+        <div class="section-header">
+          <h2 class="section-title">Topprodukter – alla månader</h2>
+        </div>
+        <div id="all-products-loading" class="loading-state"><div class="spinner"></div></div>
+        <div id="all-products-error" class="error-state hidden">
+          <span class="error-icon">⚠</span> Kunde inte ladda produkter.
+        </div>
+        <div id="all-products-container" class="hidden">
+          <div id="all-products-list" class="products-list"></div>
+        </div>
+      </section>
+
+      <!-- Categories -->
+      <section class="products-section">
+        <div class="section-header">
+          <h2 id="categories-heading" class="section-title">Kategorier – alla månader</h2>
+        </div>
+        <div id="categories-loading" class="loading-state"><div class="spinner"></div></div>
+        <div id="categories-error" class="error-state hidden">
+          <span class="error-icon">⚠</span> Kunde inte ladda kategorier.
+        </div>
+        <div id="categories-container" class="hidden">
+          <div id="categories-list" class="categories-list"></div>
+        </div>
+      </section>
+
+      <!-- Price changes -->
+      <section id="price-changes-section" class="products-section">
+        <div class="section-header">
+          <h2 class="section-title">Prisutveckling</h2>
+          <span id="price-changes-badge" class="section-badge"></span>
+        </div>
+        <div id="price-changes-loading" class="loading-state"><div class="spinner"></div></div>
+        <div id="price-changes-error" class="error-state hidden">
+          <span class="error-icon">⚠</span> Kunde inte ladda prisutveckling.
+        </div>
+        <div id="price-changes-container" class="hidden">
+          <div class="price-changes-tabs">
+            <button type="button" class="price-tab active" data-tab="increases">Prisökningar</button>
+            <button type="button" class="price-tab" data-tab="decreases">Prissänkningar</button>
+          </div>
+          <div id="price-increases-list" class="price-changes-list"></div>
+          <div id="price-decreases-list" class="price-changes-list hidden"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================== Receipt modal ===================== -->
+  <div id="receipt-modal" class="modal-overlay hidden">
+    <div class="modal-box" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span id="modal-store-badge" class="store-badge"></span>
+          <span id="modal-date" class="modal-date"></span>
+        </div>
+        <button type="button" id="modal-close" class="modal-close" aria-label="Stäng">×</button>
+      </div>
+      <div class="modal-summary">
+        <span id="modal-item-count"></span>
+        <span id="modal-total" class="modal-total-amt"></span>
+      </div>
+      <div class="modal-body">
+        <table class="receipt-items-table">
+          <thead>
+            <tr>
+              <th>Produkt</th>
+              <th class="align-right">Antal</th>
+              <th class="align-right">Styckpris</th>
+              <th class="align-right">Summa</th>
+            </tr>
+          </thead>
+          <tbody id="modal-items-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Product history modal ===================== -->
+  <div id="product-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-box--wide" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 id="product-modal-name" class="modal-product-name"></h3>
+        <button type="button" id="product-modal-close" class="modal-close" aria-label="Stäng">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="chart-wrapper" style="margin-top:16px">
+          <canvas id="product-history-chart"></canvas>
+        </div>
+        <table class="receipt-items-table">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Butik</th>
+              <th class="align-right">Styckpris</th>
+              <th class="align-right">Antal</th>
+              <th class="align-right">Summa</th>
+            </tr>
+          </thead>
+          <tbody id="product-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Compare modal ===================== -->
+  <div id="compare-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-box--wide" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 class="modal-product-name">Jämför månader</h3>
+        <button type="button" id="compare-modal-close" class="modal-close" aria-label="Stäng">×</button>
+      </div>
+      <div class="modal-body" style="padding-top:20px">
+        <div class="compare-selectors">
+          <div class="compare-selector-group">
+            <label for="compare-month-a">Månad A</label>
+            <select id="compare-month-a" class="compare-select"></select>
+          </div>
+          <span class="compare-vs">vs</span>
+          <div class="compare-selector-group">
+            <label for="compare-month-b">Månad B</label>
+            <select id="compare-month-b" class="compare-select"></select>
+          </div>
+          <button type="button" id="compare-run-btn" class="compare-run-btn">Jämför</button>
+        </div>
+        <div id="compare-loading" class="loading-state hidden"><div class="spinner"></div></div>
+        <div id="compare-error" class="error-state hidden">
+          <span class="error-icon">⚠</span>
+          <span id="compare-error-msg"></span>
+        </div>
+        <div id="compare-result" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

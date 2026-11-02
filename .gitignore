@@ -20,6 +20,7 @@ output/
 # Debug files
 *.png
 *.html
+!web/public/*.html
 login-page-debug.*
 after-login.*
 receipts-page-*

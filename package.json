@@ -18,7 +18,9 @@
     "sync-willys": "node fetch-receipts.js && node scripts/update-receipts.cjs",
     "sync-ica": "node fetch-ica-kivra.js && node scripts/update-ica.cjs",
     "sync-all": "npm run sync-willys && npm run sync-ica",
-    "web": "node web/server.cjs"
+    "web": "node web/server.cjs",
+    "recategorize": "node scripts/recategorize.cjs",
+    "test": "node --test 'test/*.test.cjs'"
   },
   "keywords": [
     "willys",
@@ -28,7 +30,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "pdf-parse": "^2.4.5",

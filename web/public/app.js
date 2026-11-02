@@ -400,10 +400,16 @@ async function openProductModal(productName) {
       }
     });
 
+    // One shared, chronologically sorted x-axis for both stores. Without
+    // explicit labels Chart.js orders the category axis by first appearance
+    // (all Willys dates, then all ICA dates).
+    const dateLabels = [...new Set(history.map(row => row.date))].sort();
+
     const ctx = canvas.getContext('2d');
     productChart = new Chart(ctx, {
       type: 'line',
       data: {
+        labels: dateLabels,
         datasets: [
           {
             label: 'Willys',
@@ -1050,6 +1056,7 @@ async function init() {
           div.addEventListener('click', () => {
             openProductModal(item.name);
             hide(searchResults);
+            hide(searchClear);
             searchInput.value = '';
           });
           searchResults.appendChild(div);

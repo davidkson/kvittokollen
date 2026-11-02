@@ -1,18 +1,20 @@
 'use strict';
 
 const express = require('express');
-const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Bind to localhost only: the API exposes personal purchase data.
+// Set HOST=0.0.0.0 explicitly if LAN access is really wanted.
+const HOST = process.env.HOST || '127.0.0.1';
 
 // ---------------------------------------------------------------------------
 // Data loading
 // ---------------------------------------------------------------------------
 
-const OUTPUT_DIR = path.join(__dirname, '..', 'output');
+const OUTPUT_DIR = require('../lib/data.cjs').outputDir();
 
 function loadJSON(filename) {
   const filePath = path.join(OUTPUT_DIR, filename);
@@ -24,24 +26,10 @@ function loadJSON(filename) {
   }
 }
 
-// Willys: grandTotal is wrong (contains item count). Calculate from items.
-function willysTotal(receipt) {
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items
-    .filter(item => item.totalPrice >= 0)
-    .reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
-
-// ICA: grandTotal is correct. Negative totalPrice = discounts/returns.
-function icaTotal(receipt) {
-  if (receipt.metadata && typeof receipt.metadata.grandTotal === 'number') {
-    return receipt.metadata.grandTotal;
-  }
-  if (!receipt.items || !Array.isArray(receipt.items)) return 0;
-  return receipt.items
-    .filter(item => item.totalPrice >= 0)
-    .reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-}
+// Totals per store (Willys: sum of items incl. discounts; ICA: grandTotal).
+const { receiptTotal } = require('../lib/data.cjs');
+const willysTotal = r => receiptTotal(r, 'willys');
+const icaTotal = r => receiptTotal(r, 'ica');
 
 function parseMonth(dateStr) {
   if (!dateStr) return null;
@@ -98,7 +86,6 @@ const allReceipts = [...willysReceipts, ...icaReceipts];
 // Middleware
 // ---------------------------------------------------------------------------
 
-app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -667,8 +654,8 @@ app.use('/api', (req, res) => {
 // Start
 // ---------------------------------------------------------------------------
 
-app.listen(PORT, () => {
-  console.log(`Kvittokollen API running at http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Kvittokollen API running at http://${HOST}:${PORT}`);
   console.log(`  Willys receipts loaded: ${willysReceipts.length}`);
   console.log(`  ICA receipts loaded:    ${icaReceipts.length}`);
 });
